@@ -21,6 +21,10 @@ result_path = r'C:\Users\95725\Desktop\semantic_result'
 save_dir = r'D:\ProjectCodes\VisionMeasurement\result'
 LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'
 
+LEDNET_DEVICE = None
+LEDNET_MODEL = None
+TRANSFORM_FUNCTION = None
+
 '''
     通过状态机的形式判断此时像素点位于立柱外、立柱中、立柱内
     predict[x, y] = 0-其他 1-货物 2-立柱
@@ -168,28 +172,49 @@ def upside_detect(predict, p0_x, p0_y, p1_x, p1_y):
     return p2_x, p2_y, p3_x, p3_y
 
 '''
-    LEDNet语义分割推理
+    获取所需的设备及LEDNet模型
 '''
-def LEDNet_inference(image):
+def get_device_and_LEDNet_model():
     cuda = torch.cuda.is_available()
     device = torch.device('cuda:0' if cuda else 'cpu')
 
-    # Load Model
     model = LEDNet(3).to(device)  # param: num_class
     model.load_state_dict(torch.load(LEDNet_detector_weights, map_location=device))
     model.eval()
 
-    # Transform
+    return device, model
+
+'''
+    获取所需的转换函数
+'''
+def get_transform_fn():
     transform_fn = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
-    image = transform_fn(image).unsqueeze(0).to(device)
+    return transform_fn
+
+'''
+    LEDNet语义分割推理
+'''
+def LEDNet_inference(image):
+    global LEDNET_DEVICE, LEDNET_MODEL, TRANSFORM_FUNCTION
+    # Load Model
+    # device, model = get_device_and_LEDNet_model()
+    if LEDNET_DEVICE is None or LEDNET_MODEL is None:
+        LEDNET_DEVICE, LEDNET_MODEL = get_device_and_LEDNet_model()
+
+    # Transform
+    # transform_fn = get_transform_fn()
+    if TRANSFORM_FUNCTION is None:
+        TRANSFORM_FUNCTION = get_transform_fn()
+
+    image = TRANSFORM_FUNCTION(image).unsqueeze(0).to(LEDNET_DEVICE)
     # start_time = time.time()
     # f = open(os.path.join(result_path, r'time_log.txt'), 'a')
     with torch.no_grad():
-        output = model(image)
+        output = LEDNET_MODEL(image)
     # end_time = time.time()  # 记录结束时间
     # execution_time = end_time - start_time  # 计算执行时间
     # print("推理时间: ", execution_time)

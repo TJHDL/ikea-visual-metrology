@@ -15,13 +15,15 @@ from torchvision.transforms import ToTensor
 from data import get_predicted_points, calc_point_squre_dist
 from utils import save_key_frames, get_head_tail_sorted_number, get_file_description, close_file_description
 
-image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240228'
+image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240301'
 save_dir = r'C:\Users\95725\Desktop\src'
 result_path = r'C:\Users\95725\Desktop\semantic_result'
 BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #r'checkpoints\dp_detector_799_v100.pth'
 image_num = 427
 total_num = 1723
 
+BOXMPR_DEVICE = None
+BOXMPR_MODEL = None
 
 '''
     利用检测器检测单张图片中的一对顶点
@@ -62,9 +64,9 @@ def get_cornerPoints(image, pred_points):
     return points
 
 '''
-    神经网络模型推理货物上端两顶点坐标
+    获取需要的设备和BoxMPR模型
 '''
-def BoxMPR_inference(image):
+def get_device_and_BoxMPR_model():
     cuda = torch.cuda.is_available()
     device = torch.device('cuda:0' if cuda else 'cpu')
     torch.set_grad_enabled(False)
@@ -72,7 +74,19 @@ def BoxMPR_inference(image):
         3, 32, config.NUM_FEATURE_MAP_CHANNEL).to(device)
     dp_detector.load_state_dict(torch.load(BoxMPR_detector_weights, map_location=device))
     dp_detector.eval()
-    return detect_image(dp_detector, device, image)
+
+    return device, dp_detector
+
+'''
+    神经网络模型推理货物上端两顶点坐标
+'''
+def BoxMPR_inference(image):
+    global BOXMPR_DEVICE, BOXMPR_MODEL
+    # device, dp_detector = get_device_and_BoxMPR_model()
+    if BOXMPR_DEVICE is None or BOXMPR_MODEL is None:
+        BOXMPR_DEVICE, BOXMPR_MODEL = get_device_and_BoxMPR_model()
+
+    return detect_image(BOXMPR_MODEL, BOXMPR_DEVICE, image)
 
 '''
     滤除穿越点
