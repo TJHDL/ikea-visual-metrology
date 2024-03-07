@@ -26,5 +26,5 @@ Reference:<br>
 [5]Chen, Xiaotian, Xuejin Chen, and Zheng-Jun Zha. "Structure-aware residual pyramid network for monocular depth estimation." arXiv preprint arXiv:1907.06023 (2019).<br>
 
 Please cite:<br>
-[1]Huang, Dingliang, et al. "Monocular Visual Measurement Based on Marking Points Regression and Semantic Information." 2023 China Control Congress (CAC). IEEE, 2024.<br>
+[1]Huang, Dingliang, et al. "Monocular Visual Measurement Based on Marking Points Regression and Semantic Information." 2023 China Automation Congress (CAC). IEEE, 2024.<br>
 [2]Chen, Junzhu, et al. "Relative Localization of Vehicle-to-Drone Coordination Based on Lidar." 2023 International Conference on Autonomous Unmanned Systems (ICAUS). Springer, 2024.<br>
