@@ -19,7 +19,7 @@ image_dir = r'D:\ProjectCodes\VisionMeasurement\test'
 image_name = r'IMG_3543.jpg'
 result_path = r'C:\Users\95725\Desktop\semantic_result'
 save_dir = r'D:\ProjectCodes\VisionMeasurement\result'
-LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'
+LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'    #r'checkpoints\LEDNet_iter_170400_v100.pth'
 
 LEDNET_DEVICE = None
 LEDNET_MODEL = None

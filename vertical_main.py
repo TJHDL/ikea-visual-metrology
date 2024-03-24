@@ -24,8 +24,8 @@ data_src_dir = r'C:\Users\95725\Desktop\src'
 data_dst_dir = r'C:\Users\95725\Desktop\dst'
 # image_dir = r'D:\ProjectCodes\VisionMeasurement\1020test\floor4\src\kuwei16'
 # save_dir = r'D:\ProjectCodes\VisionMeasurement\1020test\floor4\dst\kuwei16'
-BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #r'checkpoints\dp_detector_799_v100.pth'
-LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'
+BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
+LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'    #r'checkpoints\LEDNet_iter_170400_v100.pth'
 # image_name = r'IMG_0002_box1.jpg'
 # point_0_x = 945
 # point_0_y = 650
@@ -34,10 +34,10 @@ LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'
 
 RED_WIDTH = 10 #cm
 TIEPIAN_WIDTH = 3 #cm
-FLOOR_NUM = 4   #3
+FLOOR_NUM = 3   #3
 FLOOR_HEIGHT = 140  #cm
 CAR_HEIGHT = 87 #cm
-UAV_HEIGHT = 400    #cm 3层对应260 4层对应400
+UAV_HEIGHT = 260    #cm 2层若以100高度飞应取125计算 3层对应260 4层对应400
 H_CAMERA = FLOOR_NUM * FLOOR_HEIGHT - (CAR_HEIGHT + UAV_HEIGHT) - TIEPIAN_WIDTH #cm   将上方横梁的上边沿当作地面，参照论文把上下调转过来，此数值需要根据无人机的飞行高度、货架单层高度进行计算估计
 # H_CAMERA = FLOOR_NUM * FLOOR_HEIGHT - (CAR_HEIGHT + UAV_HEIGHT) - TIEPIAN_WIDTH - RED_WIDTH
 
@@ -328,6 +328,11 @@ def points_filter(points, image):
             delta_x = abs(point_i[0] - point_j[0])
             if delta_x < config.BOX_MIN_X_DIST or delta_x > BOX_MAX_X_DIST:  # config.BOX_MIN_X_DIST
                 continue
+
+            # Step 7: bottom points filtration
+            if point_i[1] >= 550 or point_j[1] >= 550:
+                continue
+
             point_pairs.append((i, j))
 
     return point_pairs
@@ -630,7 +635,7 @@ def BoxMPR_LEDNet_main(image_dir, save_dir, image_name):
     if p3_y == 0:
         p3_y = p3_y_lednet if p3_y_lednet > 0 else p3_y_line
 
-    if abs(p2_y - p3_y) > 10:
+    if abs(p2_y - p3_y) > 5:
         p2_y, p3_y = min(p2_y, p3_y), min(p2_y, p3_y)
 
     cv2.circle(image, (p2_x, p2_y), radius, (255, 255, 0), 3)

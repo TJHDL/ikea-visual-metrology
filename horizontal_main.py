@@ -19,24 +19,24 @@ from stitching import Stitcher
 
 # image_dir = r'D:\ProjectCodes\VisionMeasurement\stiching_test\img_dir\kuwei6'
 # save_dir = r'D:\ProjectCodes\VisionMeasurement\stiching_test\result_dir\kuwei6'
-image_dir = r'C:\Users\95725\Desktop\src\kuwei15'
-save_dir = r'C:\Users\95725\Desktop\dst\kuwei15'
+image_dir = r'C:\Users\95725\Desktop\src\kuwei6'
+save_dir = r'C:\Users\95725\Desktop\dst\kuwei6'
 data_src_dir = r'C:\Users\95725\Desktop\src'
 data_dst_dir = r'C:\Users\95725\Desktop\dst'
 # image_dir = r'D:\ProjectCodes\VisionMeasurement\1020test\floor4\src\kuwei1'
 # save_dir = r'D:\ProjectCodes\VisionMeasurement\1020test\floor4\dst\kuwei1'
 image_name = '1.jpg'
-BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #r'checkpoints\dp_detector_799_v100.pth'
-LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'
+BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
+LEDNet_detector_weights = r'checkpoints\LEDNet_iter_170400_v100.pth'    #r'checkpoints\LEDNet_iter_170400_v100.pth'
 CROP = 1
 OPERATOR = "sift"
 CONFIDENCE = 0.2
-LEFT_OFFSET = 1.6   #cm
-RIGHT_OFFSET = -1.4 #cm
-LEFT_CENTER_OFFSET = 0.1    #cm
-RIGHT_CENTER_OFFSET = 0.9   #cm
+LEFT_OFFSET = 1.6   #cm 1.6
+RIGHT_OFFSET = -1.4 #cm -1.4
+LEFT_CENTER_OFFSET = 0.1    #cm 0.1
+RIGHT_CENTER_OFFSET = 0.9   #cm 0.9
 PILLAR_WIDTH = 11.8 #cm
-KUWEI_WIDTH = 325   #cm
+KUWEI_WIDTH = 325   #cm 3货物kuwei=325cm 2货物kuwei=222cm
 
 BOXMPR_DEVICE = None
 BOXMPR_MODEL = None
@@ -138,7 +138,7 @@ def points_filter(points, image):
     num_detected = len(points)
     point_pairs = []
     BOX_MAX_X_DIST = 600    #480
-    BOX_MIN_X_DIST = 300
+    BOX_MIN_X_DIST = 220    #300
     for i in range(num_detected - 1):
         for j in range(i + 1, num_detected):
             if paired_points.__contains__(i) or paired_points.__contains__(j):
@@ -180,9 +180,14 @@ def points_filter(points, image):
             delta_x = abs(point_i[0] - point_j[0])
             if delta_x < BOX_MIN_X_DIST or delta_x > BOX_MAX_X_DIST: # config.BOX_MIN_X_DIST
                 continue
+
+            # Step 7: bottom points filtration
+            if point_i[1] >= 550 or point_j[1] >= 550:
+                continue
+
             point_pairs.append((i, j))
-            paired_points.append(i);
-            paired_points.append(j);
+            paired_points.append(i)
+            paired_points.append(j)
 
     return point_pairs
 
@@ -382,11 +387,15 @@ def scale_measurement_partial(key_point_list, direction):
 def points_extractor(image_dir, img_name, point_num):
     img = cv2.imread(os.path.join(image_dir, img_name))
     points = BoxMPR_inference(img)
-    if (point_num == 2 and len(points) < 2) or (point_num == 4 and len(points) < 4):
+    if (point_num == 2 and len(points) < 2) or (point_num == 4 and len(points) < 3):
         print("length of points: ", len(points))
         print("此处无货物")
         return points, img, False
     points.sort(key=lambda x: x[0], reverse=False)
+
+    # for point in points:
+    #     cv2.circle(img, (point[0], point[1]), 5, (0, 255, 0), 3)
+
     if point_num == 2:
         point_pairs = points_filter(points, img)
         if(len(point_pairs) == 0):
@@ -419,6 +428,16 @@ def points_extractor(image_dir, img_name, point_num):
         if len(point_pairs) != 2:
             print(img_name + " points number error! Points num: %d" % len(points))
             print(img_name + " points number error! Point pairs num: %d" % len(point_pairs))
+
+            if len(points) == 3:
+                center_point_cnt = 0
+                img_width = img.shape[1]
+                for point in points:
+                    if point[0] / img_width >= 0.35 and point[0] / img_width <= 0.65:
+                        center_point_cnt += 1
+            if center_point_cnt == 2:
+                return points, img, True
+
             return points, img, False
 
         p0_x = points[point_pairs[0][0]][0]
@@ -846,7 +865,18 @@ def Serial_Images_Measurement(image_dir, save_dir):
         left_pillar_pixel_width = left_pillar_right_x - left_pillar_left_x
         left_box_pixel_width = points5[1][0] - points5[0][0]
         left_pillar_box_gap_pixel_width = points5[0][0] - left_pillar_right_x
-        left_box_gap_pixel_width = points4[2][0] - points4[1][0]
+        if len(points4) == 3:
+            center_point1, center_point2 = None, None
+            img_width = img4.shape[1]
+            for point in points4:
+                if point[0] / img_width >= 0.35 and point[0] / img_width <= 0.65:
+                    if center_point1 is None:
+                        center_point1 = point
+                    else:
+                        center_point2 = point
+            left_box_gap_pixel_width = center_point2[0] - center_point1[0]
+        else:
+            left_box_gap_pixel_width = points4[2][0] - points4[1][0]
         center_box_pixel_width = points3[1][0] - points3[0][0]
 
         pillar_pixel_width = left_pillar_pixel_width
@@ -865,7 +895,18 @@ def Serial_Images_Measurement(image_dir, save_dir):
         right_pillar_pixel_width = right_pillar_right_x - right_pillar_left_x
         right_box_pixel_width = points1[1][0] - points1[0][0]
         right_pillar_box_gap_pixel_width = right_pillar_left_x - points1[1][0]
-        right_box_gap_pixel_width = points2[2][0] - points2[1][0]
+        if len(points2) == 3:
+            center_point1, center_point2 = None, None
+            img_width = img2.shape[1]
+            for point in points2:
+                if point[0] / img_width >= 0.35 and point[0] / img_width <= 0.65:
+                    if center_point1 is None:
+                        center_point1 = point
+                    else:
+                        center_point2 = point
+            right_box_gap_pixel_width = center_point2[0] - center_point1[0]
+        else:
+            right_box_gap_pixel_width = points2[2][0] - points2[1][0]
         center_box_pixel_width = points3[1][0] - points3[0][0]
 
         pillar_pixel_width = right_pillar_pixel_width
@@ -887,8 +928,31 @@ def Serial_Images_Measurement(image_dir, save_dir):
     right_box_pixel_width = points1[1][0] - points1[0][0]
     left_pillar_box_gap_pixel_width = points5[0][0] - left_pillar_right_x
     right_pillar_box_gap_pixel_width = right_pillar_left_x - points1[1][0]
-    left_box_gap_pixel_width = points4[2][0] - points4[1][0]
-    right_box_gap_pixel_width = points2[2][0] - points2[1][0]
+
+    if len(points4) == 3:
+        center_point1, center_point2 = None, None
+        img_width = img4.shape[1]
+        for point in points4:
+            if point[0] / img_width >= 0.35 and point[0] / img_width <= 0.65:
+                if center_point1 is None:
+                    center_point1 = point
+                else:
+                    center_point2 = point
+        left_box_gap_pixel_width = center_point2[0] - center_point1[0]
+    else:
+        left_box_gap_pixel_width = points4[2][0] - points4[1][0]
+    if len(points2) == 3:
+        center_point1, center_point2 = None, None
+        img_width = img2.shape[1]
+        for point in points2:
+            if point[0] / img_width >= 0.35 and point[0] / img_width <= 0.65:
+                if center_point1 is None:
+                    center_point1 = point
+                else:
+                    center_point2 = point
+        right_box_gap_pixel_width = center_point2[0] - center_point1[0]
+    else:
+        right_box_gap_pixel_width = points2[2][0] - points2[1][0]
 
     pillar_pixel_width = (left_pillar_pixel_width + right_pillar_pixel_width) / 2
     center_box_width = center_box_pixel_width / pillar_pixel_width * PILLAR_WIDTH

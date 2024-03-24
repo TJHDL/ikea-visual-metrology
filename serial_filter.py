@@ -15,12 +15,12 @@ from torchvision.transforms import ToTensor
 from data import get_predicted_points, calc_point_squre_dist
 from utils import save_key_frames, get_head_tail_sorted_number, get_file_description, close_file_description
 
-image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240301'
+image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4'
 save_dir = r'C:\Users\95725\Desktop\src'
 result_path = r'C:\Users\95725\Desktop\semantic_result'
-BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #r'checkpoints\dp_detector_799_v100.pth'
-image_num = 427
-total_num = 1723
+BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
+image_num = 540
+total_num = 2000
 
 BOXMPR_DEVICE = None
 BOXMPR_MODEL = None
@@ -156,6 +156,11 @@ def points_filter(points, image):
             delta_x = abs(point_i[0] - point_j[0])
             if delta_x < config.BOX_MIN_X_DIST or delta_x > BOX_MAX_X_DIST: # config.BOX_MIN_X_DIST
                 continue
+
+            # Step 7: bottom points filtration
+            if point_i[1] >= 550 or point_j[1] >= 550:
+                continue
+
             point_pairs.append((i, j))
 
     return point_pairs
@@ -200,7 +205,8 @@ def get_perfect_key_frame(fig_candidates, fd):
     计算图像中货架立柱的中心位置以确定其在图像中方位
 '''
 def calculate_pillar_center(predict):
-    x_coordinates = np.where(predict[5] == 2)[0]
+    sample_line = int(predict.shape[0] / 2)
+    x_coordinates = np.where(predict[sample_line] == 2)[0]
     if len(x_coordinates) == 0:
         return -1
     distribution = np.bincount(x_coordinates)
@@ -246,6 +252,8 @@ def get_kuwei_range(serial_num, total_num):
     end_pos_range_left = 0.215  # 4 / 17
     end_pos_range_right = 0.314  # 5 / 17
     serial_images = []
+    pillar_x = 0
+    pre_pillar_x = 0
 
     while True:
         cnt += 1
@@ -264,7 +272,14 @@ def get_kuwei_range(serial_num, total_num):
         height = raw_image.shape[0]
         pillar_x = detect_pillar_position(raw_image, serial_num, width, height)
         x_ratio = pillar_x / width
+        pre_x_ratio = pre_pillar_x / width
         print("pillar x pos: ", x_ratio)
+
+        # 避免库位划分时语义信息误识别导致的突变
+        gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
+        if cnt > 1 and gap_x_ratio >= 0.1:
+            serial_num += 1
+            continue
 
         if state == 0 and (start_pos_range_left <= x_ratio and x_ratio <= start_pos_range_right):
             start_num = serial_num
@@ -277,6 +292,7 @@ def get_kuwei_range(serial_num, total_num):
             serial_images.append(raw_image)
 
         serial_num += 1
+        pre_pillar_x = pillar_x
         if cnt >= 80 or state == 2 or serial_num > total_num:
             break
 
@@ -375,5 +391,6 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
 
 
 if __name__ == '__main__':
-    # single_kuwei_key_frame_filter(image_num, save_dir, total_num)
+    # f = get_file_description(save_dir, 'test_log.txt')
+    # single_kuwei_key_frame_filter(image_num, save_dir, total_num, f)
     batch_kuwei_key_frame_filter(image_dir, save_dir)
