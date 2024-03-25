@@ -18,7 +18,7 @@ from utils import save_key_frames, get_head_tail_sorted_number, get_file_descrip
 image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4'
 save_dir = r'C:\Users\95725\Desktop\src'
 result_path = r'C:\Users\95725\Desktop\semantic_result'
-BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
+BoxMPR_detector_weights = r'D:\ProjectCodes\VisionMeasurement\GapHeightMeasurement\checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
 image_num = 540
 total_num = 2000
 
