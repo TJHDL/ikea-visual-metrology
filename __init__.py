@@ -3,4 +3,4 @@
 # @Author  : Dingliang Huang
 # @Affi    : Tongji University BISL Group
 # @File    : __init__.py
-from .semantic_info import *
+from .utils.semantic_info_util import *
