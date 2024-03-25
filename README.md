@@ -18,6 +18,10 @@ SARPN checkpoint BaiduNetDisk:<br>
 链接：https://pan.baidu.com/s/1_Hd4KtM1G8A_vgGy9jCqgw <br>
 提取码：tjdx<br>
 
+Datasets for test:<br>
+链接：https://pan.baidu.com/s/1dJU7Cf2X8KpAIYbyFCewLw <br>
+提取码：tjdx<br>
+
 Reference:<br>
 [1]Lee, Byeong-Uk, et al. "Single View Scene Scale Estimation Using Scale Field." Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2023.<br>
 [2]Zhu, Rui, et al. "Single view metrology in the wild." European Conference on Computer Vision. Cham: Springer International Publishing, 2020.<br>
