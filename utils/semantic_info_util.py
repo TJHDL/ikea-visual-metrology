@@ -355,8 +355,8 @@ def gap_height_measurement_based_on_camera_height(mask, width, height, h_camera,
     avg_red = total_red / valid_width
 
     # avg_red = height - avg_gap
-    print('avg_red: ', avg_red)
-    print('avg_gap: ', avg_gap)
+    # print('avg_red: ', avg_red)
+    # print('avg_gap: ', avg_gap)
 
     vt = (point1[1] + point2[1]) / 2
     vb = vt - avg_gap

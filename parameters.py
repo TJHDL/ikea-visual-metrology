@@ -1,4 +1,4 @@
-
+import argparse
 
 # horizontal parameters
 LEFT_OFFSET = 1.6   #cm 1.6
@@ -33,5 +33,29 @@ CAR_HEIGHT = 87 #cm
     |5层 | 540cm | 540cm  |
     |6层 | 680cm | 680cm  |
 '''
-UAV_HEIGHT = 260    #cm 2层若以100高度飞应取125计算 3层对应260 4层对应400
-H_CAMERA = FLOOR_NUM * FLOOR_HEIGHT - (CAR_HEIGHT + UAV_HEIGHT) - TIEPIAN_WIDTH #cm   将上方横梁的上边沿当作地面，参照论文把上下调转过来，此数值需要根据无人机的飞行高度、货架单层高度进行计算估计
+UAV_HEIGHT = { 2 : 125,
+               3 : 260,
+               4 : 400,
+               5 : 540,
+               6 : 680
+               }
+'''
+    将上方横梁的上边沿当作地面，参照论文把上下调转过来，此数值需要根据无人机的飞行高度、货架单层高度进行计算估计
+'''
+H_CAMERA = FLOOR_NUM * FLOOR_HEIGHT - (CAR_HEIGHT + UAV_HEIGHT[FLOOR_NUM]) - TIEPIAN_WIDTH #cm
+
+
+def get_parser_for_measurement():
+    parser = argparse.ArgumentParser(description='Arguments for spliting kuwei and measurement')
+    parser.add_argument('--img_dir', type=str, default=r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4',
+                        help="Original rtsp video stream frames' directory.")
+    parser.add_argument('--src_dir', type=str, default=r'C:\Users\95725\Desktop\src',
+                        help="Splited kuweis storage directory.")
+    parser.add_argument('--dst_dir', type=str, default=r'C:\Users\95725\Desktop\dst',
+                        help="Measurement results storage directory")
+    parser.add_argument('--floor', type=int,
+                        help="Floor number of captured images.")
+    parser.add_argument('--type', type=int, choices=[3, 2], default=3,
+                        help="Measured kuwei type.")
+    
+    return parser

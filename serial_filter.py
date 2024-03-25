@@ -35,7 +35,7 @@ def get_perfect_key_frame(fig_candidates, fd):
 
     key_idx = x_arr[int(len(x_arr) / 2)]
 
-    print("检测到的最大角点数: ", max_num)
+    # print("检测到的最大角点数: ", max_num)
     fd.write("检测到的最大角点数: " + str(max_num) + "\n")
     fd.write("包含以下帧id: \n")
     for idx in x_arr:
@@ -75,7 +75,7 @@ def detect_pillar_position(raw_image, serial_num, width, height):
         return pillar_x
 
     radius = 5
-    print("Circle position: x=" + str(pillar_x) + " y=" + str(int(height / 2)))
+    # print("Circle position: x=" + str(pillar_x) + " y=" + str(int(height / 2)))
     # cv2.circle(raw_image, (pillar_x, int(height / 2)), radius, (0, 0, 255), 3)
     # cv2.namedWindow(str(serial_num), 0)
     # cv2.imshow(str(serial_num), raw_image)
@@ -104,7 +104,7 @@ def get_kuwei_range(serial_num, total_num):
 
     while True:
         cnt += 1
-        print("Detecting " + str(serial_num) + ".jpg.....")
+        # print("Detecting " + str(serial_num) + ".jpg.....")
         try:
             raw_image = cv2.imread(os.path.join(image_dir, str(serial_num) + ".jpg"))
         except Exception as e:
@@ -120,7 +120,7 @@ def get_kuwei_range(serial_num, total_num):
         pillar_x = detect_pillar_position(raw_image, serial_num, width, height)
         x_ratio = pillar_x / width
         pre_x_ratio = pre_pillar_x / width
-        print("pillar x pos: ", x_ratio)
+        # print("pillar x pos: ", x_ratio)
 
         # 避免库位划分时语义信息误识别导致的突变
         gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
@@ -144,10 +144,10 @@ def get_kuwei_range(serial_num, total_num):
             break
 
     if state == 0:
-        print("未找到开始点")
+        print("[WARNING] 未找到开始点")
         return -1, -1, None
     elif state == 1:
-        print("未找到结束点")
+        print("[ERROR] 未找到结束点")
         return -1, -1, None
 
     return start_num, end_num, serial_images
@@ -208,7 +208,7 @@ def single_kuwei_key_frame_filter(image_num, save_path, total_num, fd):
         return -1, -1
 
     kuwei_str = "起始序号: " + str(start_num) + " 终止序号: " + str(end_num) + " 库位图片数量: " + str(len(serial_images))
-    print(kuwei_str)
+    print("[INFO] " + kuwei_str)
     fd.write(kuwei_str + "\n")
     fd.flush()
     center_offset = int((end_num - start_num) / 2)
@@ -222,6 +222,7 @@ def single_kuwei_key_frame_filter(image_num, save_path, total_num, fd):
     批量完成序列化图片筛选
 '''
 def batch_kuwei_key_frame_filter(image_dir, save_dir):
+    print("[WORK FLOW] Starting spliting kuweis.")
     current_num, total_num = get_head_tail_sorted_number(image_dir)
     kuwei_num = 1
     f = get_file_description(save_dir, 'filter_log.txt')
@@ -235,11 +236,12 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
             current_num += 50
             continue
         current_num = end_num + 1
-        print("Save path: " + save_path)
+        # print("Save path: " + save_path)
 
     close_file_description(f)
-    print("Auto key frame filter complete!")
-    print("Filtered kuwei num: " + str(len([dir_name for dir_name in os.listdir(save_dir) if not dir_name.endswith(".txt")])))
+    print("[INFO] Auto key frame filter complete!")
+    print("[INFO] Filtered kuwei num: " + str(len([dir_name for dir_name in os.listdir(save_dir) if not dir_name.endswith(".txt")])))
+    print("[WORK FLOW] Spliting kuweis complete.")
 
 
 if __name__ == '__main__':

@@ -163,17 +163,17 @@ def BoxMPR_LEDNet_main(image_dir, save_dir, image_name):
     width = image.shape[1]
     points = BoxMPR_inference(image)
     if len(points) < 2:
-        print("此处无货物")
+        print("[INFO] Empty place.")
         return -1, False
 
     point_pairs = points_filter(points, image)
 
     if (len(point_pairs) == 0):
-        print("此处无货物")
+        print("[INFO] Empty place.")
         return -1, False
 
     if len(point_pairs[0]) != 2:
-        print(image_name + " points number error! Points num: %d" % len(point_pairs[0]))
+        print("[ERROR] " + image_name + " points number error! Points num: %d" % len(point_pairs[0]))
         return -1, False
 
     p0_x = points[point_pairs[0][0]][0]
@@ -244,25 +244,11 @@ def BoxMPR_LEDNet_main(image_dir, save_dir, image_name):
     # red_width = 9.8
     # gap_height = gap_height_measurement_mask(ROI, w, h, RED_WIDTH)
     gap_height = gap_height_measurement_based_on_camera_height(ROI, w, h, param.H_CAMERA, [p0_x, p0_y], [p1_x, p1_y], [p2_x, p2_y], [p3_x, p3_y])
-    print("Gap's height: ", gap_height)
+    print("[INFO] Gap's height: ", gap_height)
 
     # cv2.imwrite(os.path.join(save_dir, image_name.split('.')[0] + "_" + str(gap_height) + "." + image_name.split('.')[1]), image)
     cv2.imwrite(os.path.join(save_dir, 'vertical_' + image_name), image)
     return gap_height, True, [p0_x, p0_y], [p1_x, p1_y], [p2_x, p2_y], [p3_x, p3_y]
-
-
-def batch_process():
-    df = pd.DataFrame(columns=("图片编号", "测量结果（单位：cm）"))
-    for idx, file in enumerate(os.listdir(image_dir)):
-        try:
-            print("------""Processing file " + str(idx) + ": " + file + "......------")
-            gap_height = BoxMPR_LEDNet_main(file)
-            row_index = len(df) + 1  # 当前excel内容有几行
-            df.loc[row_index] = [file, gap_height]
-        except Exception as e:
-            print(repr(e))
-
-    df.to_excel(os.path.join(r'F:\ProjectImagesDataset\IKEA\20230825\vertical_experiment', "measurement.xlsx"), index=False)
 
 
 def Serial_Images_Measurement(image_dir, save_dir):
@@ -277,19 +263,19 @@ def Serial_Images_Measurement(image_dir, save_dir):
         gap_height1, flag1, fig1_point1, fig1_point2, fig1_pillar_point1, fig1_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '1.jpg')
         # print("fig1_point1: " + str(fig1_point1))
     except Exception as e:
-        print("Fig1: " + repr(e))
+        # print("Fig1: " + repr(e))
         flag1 = False
     try:
         gap_height3, flag3, fig3_point1, fig3_point2, fig3_pillar_point1, fig3_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '3.jpg')
         # print("fig3_point1: " + str(fig3_point1))
     except Exception as e:
-        print("Fig3: " + repr(e))
+        # print("Fig3: " + repr(e))
         flag3 = False
     try:
         gap_height5, flag5, fig5_point1, fig5_point2, fig5_pillar_point1, fig5_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '5.jpg')
         # print("fig5_point1: " + str(fig5_point1))
     except Exception as e:
-        print("Fig5: " + repr(e))
+        # print("Fig5: " + repr(e))
         flag5 = False
 
     # 利用深度信息矫正尺度（不好用）
@@ -363,11 +349,12 @@ def Serial_Images_Measurement(image_dir, save_dir):
     批量完成图片的序列化测量
 '''
 def batch_serial_measurement(data_src_dir, data_dst_dir):
+    print("[WORK FLOW] Starting measuring vertical size.")
     dirs = os.listdir(data_src_dir)
     for dir in dirs:
         if dir.endswith('.txt'):
             continue
-        print("Measuring " + dir + " vertical size......")
+        print("[INFO] Measuring " + dir + " vertical size......")
         try:
             Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir))
         except Exception as e:
@@ -375,7 +362,9 @@ def batch_serial_measurement(data_src_dir, data_dst_dir):
             f.write(dir + " vertical measurement fail! Please check this kuwei.")
             print("Exception info: " + repr(e), file=f)
             close_file_description(f)
-    print("Measurement task complete!")
+
+    print("[INFO] Measurement task complete!")
+    print("[WORK FLOW] Measuring vertical size complete.")
 
 
 if __name__ == '__main__':

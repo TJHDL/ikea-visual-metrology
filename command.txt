@@ -1,0 +1,1 @@
+python main.py --floor 4 --type 3

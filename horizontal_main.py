@@ -50,8 +50,8 @@ def points_extractor(image_dir, img_name, point_num):
     img = cv2.imread(os.path.join(image_dir, img_name))
     points = BoxMPR_inference(img)
     if (point_num == 2 and len(points) < 2) or (point_num == 4 and len(points) < 3):
-        print("length of points: ", len(points))
-        print("此处无货物")
+        # print("length of points: ", len(points))
+        # print("此处无货物")
         return points, img, False
     points.sort(key=lambda x: x[0], reverse=False)
 
@@ -61,7 +61,7 @@ def points_extractor(image_dir, img_name, point_num):
     if point_num == 2:
         point_pairs = points_filter(points, img)
         if(len(point_pairs) == 0):
-            print("此处无货物")
+            # print("此处无货物")
             return points, img, False
 
         if len(point_pairs) != 1:
@@ -354,7 +354,7 @@ def Serial_Images_Measurement(image_dir, save_dir):
     scale_factor = (2 * param.PILLAR_WIDTH + center_box_width + left_box_width + right_box_width\
                     + left_pillar_box_gap_width + right_pillar_box_gap_width + left_box_gap_width + right_box_gap_width)\
                         / param.KUWEI_WIDTH
-    print("scale_factor: ", scale_factor)
+    # print("scale_factor: ", scale_factor)
 
     center_box_width /= scale_factor
     left_box_width /= scale_factor
@@ -376,11 +376,12 @@ def Serial_Images_Measurement(image_dir, save_dir):
     批量完成图片的序列化测量
 '''
 def batch_serial_measurement(data_src_dir, data_dst_dir):
+    print("[WORK FLOW] Starting measuring horizontal size.")
     dirs = os.listdir(data_src_dir)
     for dir in dirs:
         if dir.endswith('.txt'):
             continue
-        print("Measuring " + dir + " horizontal size......")
+        print("[INFO] Measuring " + dir + " horizontal size......")
         try:
             Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir))
         except Exception as e:
@@ -389,7 +390,8 @@ def batch_serial_measurement(data_src_dir, data_dst_dir):
             print("Exception info: " + repr(e), file=f)
             close_file_description(f)
 
-    print("Measurement task complete!")
+    print("[INFO] Measurement task complete!")
+    print("[WORK FLOW] Measuring horizontal size complete.")
 
 
 if __name__ == '__main__':

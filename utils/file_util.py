@@ -5,6 +5,7 @@
 # @File    : file_util.py
 import os
 import cv2
+import shutil
 
 '''
     将获取的关键帧保存至目标位置
@@ -31,6 +32,7 @@ def get_head_tail_sorted_number(image_dir):
 
     return min_number, max_number
 
+
 '''
     创建一个用于写入测量结果的txt文件
 '''
@@ -42,12 +44,14 @@ def get_file_description(save_dir, txt_name):
 
     return file
 
+
 '''
     关闭文件描述符
 '''
 def close_file_description(file):
     file.flush()
     file.close()
+
 
 def rename_all_files(image_dir):
     for filename in os.listdir(image_dir):
@@ -67,6 +71,26 @@ def rename_all_files(image_dir):
         except Exception as e:
             print("无法重命名文件 {}: {}".format(filename, str(e)))
 
+
+'''
+    清空文件夹下已存在的文件和子文件夹
+'''
+def clear_folder(folder_path):
+    print("[WARNING] Remove existed files and sub-directories. Folder path: ", folder_path)
+    for filename in os.listdir(folder_path):
+        print("[WARNING INFO] removing: ", filename)
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
+    print("[WORK FLOW] Folder cleared.")
+
+
 if __name__ == '__main__':
-    image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240119_407'
-    rename_all_files(image_dir)
+    # image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240119_407'
+    # rename_all_files(image_dir)
+    clear_folder(r'C:\Users\95725\Desktop\test')
