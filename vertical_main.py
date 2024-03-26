@@ -251,11 +251,10 @@ def BoxMPR_LEDNet_main(image_dir, save_dir, image_name):
     return gap_height, True, [p0_x, p0_y], [p1_x, p1_y], [p2_x, p2_y], [p3_x, p3_y]
 
 
-def Serial_Images_Measurement(image_dir, save_dir):
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
-    file = get_file_description(save_dir, "measurement.txt")
-
+'''
+    KUWEI_TYPE_3型库位测量
+'''
+def measure_kuwei_type_3(image_dir, save_dir, file):
     gap_height1, flag1 = -1, True
     gap_height3, flag3 = -1, True
     gap_height5, flag5 = -1, True
@@ -277,26 +276,6 @@ def Serial_Images_Measurement(image_dir, save_dir):
     except Exception as e:
         # print("Fig5: " + repr(e))
         flag5 = False
-
-    # 利用深度信息矫正尺度（不好用）
-    # if flag1:
-    #     depth1, fig1_p1_depth, fig1_p2_depth, fig1_pillar_p1_depth, fig1_pillar_p2_depth, center_depth1 = key_area_depth('1.jpg', image_dir, fig1_point1, fig1_point2, fig1_pillar_point1, fig1_pillar_point2)
-    #     gap_height1 = depth_correction(fig1_p1_depth, fig1_p2_depth, fig1_pillar_p1_depth, fig1_pillar_p2_depth, center_depth1, gap_height1)
-    #     #   可视化深度信息
-    #     plt.imshow(depth1)
-    #     plt.savefig(os.path.join(save_dir, 'fig1_depth.jpg'))
-    # if flag3:
-    #     depth3, fig3_p1_depth, fig3_p2_depth, fig3_pillar_p1_depth, fig3_pillar_p2_depth, center_depth3 = key_area_depth('3.jpg', image_dir, fig3_point1, fig3_point2, fig3_pillar_point1, fig3_pillar_point2)
-    #     gap_height3 = depth_correction(fig3_p1_depth, fig3_p2_depth, fig3_pillar_p1_depth, fig3_pillar_p2_depth, center_depth3, gap_height3)
-    #     #   可视化深度信息
-    #     plt.imshow(depth3)
-    #     plt.savefig(os.path.join(save_dir, 'fig3_depth.jpg'))
-    # if flag5:
-    #     depth5, fig5_p1_depth, fig5_p2_depth, fig5_pillar_p1_depth, fig5_pillar_p2_depth, center_depth5 = key_area_depth('5.jpg', image_dir, fig5_point1, fig5_point2, fig5_pillar_point1, fig5_pillar_point2)
-    #     gap_height5 = depth_correction(fig5_p1_depth, fig5_p2_depth, fig5_pillar_p1_depth, fig5_pillar_p2_depth, center_depth5, gap_height5)
-    #     #   可视化深度信息
-    #     plt.imshow(depth5)
-    #     plt.savefig(os.path.join(save_dir, 'fig5_depth.jpg'))
 
     if flag1 and not flag3 and not flag5:
         print("纵向间隙尺寸\n间隙3:%.2f" % (gap_height1), file=file)
@@ -346,6 +325,61 @@ def Serial_Images_Measurement(image_dir, save_dir):
 
 
 '''
+    KUWEI_TYPE_2型库位测量
+'''
+def measure_kuwei_type_2(image_dir, save_dir, file):
+    gap_height1, flag1 = -1, True
+    gap_height3, flag3 = -1, True
+    try:
+        gap_height1, flag1, fig1_point1, fig1_point2, fig1_pillar_point1, fig1_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '1.jpg')
+        # print("fig1_point1: " + str(fig1_point1))
+    except Exception as e:
+        # print("Fig1: " + repr(e))
+        flag1 = False
+    try:
+        gap_height3, flag3, fig3_point1, fig3_point2, fig3_pillar_point1, fig3_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '3.jpg')
+        # print("fig3_point1: " + str(fig3_point1))
+    except Exception as e:
+        # print("Fig3: " + repr(e))
+        flag3 = False
+
+    if flag1 and not flag3:
+        print("纵向间隙尺寸\n间隙2:%.2f" % (gap_height1), file=file)
+        print("库位中只放置了右侧货物", file=file)
+        close_file_description(file)
+        return
+
+    if not flag1 and flag3:
+        print("纵向间隙尺寸\n间隙1:%.2f" % (gap_height3), file=file)
+        print("库位中只放置了左侧货物", file=file)
+        close_file_description(file)
+        return
+
+    if not flag1 and not flag3:
+        print("库位中无货物，均处于安全距离", file=file)
+        close_file_description(file)
+        return
+
+    print("纵向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f" % (gap_height3, gap_height1), file=file)
+    close_file_description(file)
+
+    return
+
+
+def Serial_Images_Measurement(image_dir, save_dir, kuwei_type):
+    if not os.path.exists(save_dir):
+        os.mkdir(save_dir)
+    file = get_file_description(save_dir, "measurement.txt")
+
+    if kuwei_type == param.KUWEI_TYPE_3:
+        measure_kuwei_type_3(image_dir, save_dir, file)
+    elif kuwei_type == param.KUWEI_TYPE_2:
+        measure_kuwei_type_2(image_dir, save_dir, file)
+
+    return 
+
+
+'''
     批量完成图片的序列化测量
 '''
 def batch_serial_measurement(data_src_dir, data_dst_dir):
@@ -355,8 +389,9 @@ def batch_serial_measurement(data_src_dir, data_dst_dir):
         if dir.endswith('.txt'):
             continue
         print("[INFO] Measuring " + dir + " vertical size......")
+        kuwei_type = param.KUWEI_TYPE_3
         try:
-            Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir))
+            Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir), kuwei_type)
         except Exception as e:
             f = get_file_description(data_dst_dir, 'fail_log.txt')
             f.write(dir + " vertical measurement fail! Please check this kuwei.")

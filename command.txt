@@ -1,1 +1,1 @@
-python main.py --floor 4 --type 3
+python main.py --floor 4 --kuwei_type 3

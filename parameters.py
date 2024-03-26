@@ -14,7 +14,7 @@ PILLAR_WIDTH = 11.8 #cm
     |3货物库位 | 325cm |
     |2货物库位 | 222cm |
 '''
-KUWEI_WIDTH = 325   #cm
+KUWEI_WIDTH = {3:325, 2:222}   #cm
 
 # vertical parameters
 RED_WIDTH = 10 #cm
@@ -44,6 +44,25 @@ UAV_HEIGHT = { 2 : 125,
 '''
 H_CAMERA = FLOOR_NUM * FLOOR_HEIGHT - (CAR_HEIGHT + UAV_HEIGHT[FLOOR_NUM]) - TIEPIAN_WIDTH #cm
 
+KUWEI_TYPE_2 = 2
+KUWEI_TYPE_3 = 3
+KUWEI_TYPE_THRESHOLD_CHOICES = {2:25, 3:40}
+MAX_KUWEI_IMAGES_COUNT = 80
+
+START_POS_RANGE_LEFT = 0.686    # 12 / 17
+START_POS_RANGE_RIGHT = 0.785   # 13 / 17
+END_POS_RANGE_LEFT = 0.215  # 4 / 17
+END_POS_RANGE_RIGHT = 0.314  # 5 / 17
+
+KUWEI_TYPE_3_FIG2_MAX_OFFSET = 16
+KUWEI_TYPE_3_FIG2_MIN_OFFSET = 6
+KUWEI_TYPE_3_FIG4_MAX_OFFSET = 18
+KUWEI_TYPE_3_FIG4_MIN_OFFSET = 8
+
+KUWEI_TYPE_2_FIG2_LR_OFFSET = 8
+
+CENTER_POINT_LEFT_THRESHOLD = 0.35
+CENTER_POINT_RIGHT_THRESHOLD = 0.65
 
 def get_parser_for_measurement():
     parser = argparse.ArgumentParser(description='Arguments for spliting kuwei and measurement')
@@ -55,7 +74,7 @@ def get_parser_for_measurement():
                         help="Measurement results storage directory")
     parser.add_argument('--floor', type=int,
                         help="Floor number of captured images.")
-    parser.add_argument('--type', type=int, choices=[3, 2], default=3,
+    parser.add_argument('--kuwei_type', type=int, choices=[3, 2], default=3,
                         help="Measured kuwei type.")
     
     return parser

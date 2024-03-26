@@ -28,11 +28,8 @@ if __name__ == '__main__':
     clear_folder(data_src_dir)
     clear_folder(data_dst_dir)
     
-    if args.type == 3:
+    if args.kuwei_type == param.KUWEI_TYPE_3:
         batch_kuwei_key_frame_filter(img_dir, data_src_dir)
         horizontal_main.batch_serial_measurement(data_src_dir, data_dst_dir)
         vertical_main.batch_serial_measurement(data_src_dir, data_dst_dir)
         print("[END INFO] Measurement result in the directory: ", data_dst_dir)
-    else:
-        print("[APOLOGIZE] This branch is coding... Please wait a few days. Thanks!")
-        pass

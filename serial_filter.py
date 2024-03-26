@@ -10,6 +10,7 @@ import numpy as np
 from utils.semantic_info_util import LEDNet_inference
 from utils.marking_points_util import BoxMPR_inference
 from utils import save_key_frames, get_head_tail_sorted_number, get_file_description, close_file_description
+import parameters as param
 
 image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4'
 save_dir = r'C:\Users\95725\Desktop\src'
@@ -88,16 +89,13 @@ def detect_pillar_position(raw_image, serial_num, width, height):
 '''
     获取序列图片中的库位开始点和结束点对应的图片序号
 '''
-def get_kuwei_range(serial_num, total_num):
+def get_kuwei_range(serial_num, total_num, kuwei_type):
     #   state=0: 未找到开始点 state=1: 已找到开始点但未找到结束点 state=2: 已找到结束点
     state = 0
     cnt = 0
+    cnt_threshold = param.KUWEI_TYPE_THRESHOLD_CHOICES[kuwei_type]
     start_num = serial_num
     end_num = serial_num
-    start_pos_range_left = 0.686    # 12 / 17
-    start_pos_range_right = 0.785   # 13 / 17
-    end_pos_range_left = 0.215  # 4 / 17
-    end_pos_range_right = 0.314  # 5 / 17
     serial_images = []
     pillar_x = 0
     pre_pillar_x = 0
@@ -128,11 +126,13 @@ def get_kuwei_range(serial_num, total_num):
             serial_num += 1
             continue
 
-        if state == 0 and (start_pos_range_left <= x_ratio and x_ratio <= start_pos_range_right):
+        if state == 0 and (param.START_POS_RANGE_LEFT <= x_ratio and x_ratio <= param.START_POS_RANGE_RIGHT):
             start_num = serial_num
+            cnt = 0
             state = 1
-        elif state == 1 and cnt >= 50 and (end_pos_range_left <= x_ratio and x_ratio <= end_pos_range_right):
+        elif state == 1 and cnt >= cnt_threshold and (param.END_POS_RANGE_LEFT <= x_ratio and x_ratio <= param.END_POS_RANGE_RIGHT):
             end_num = serial_num
+            cnt = 0
             state = 2
 
         if state == 1 or state == 2:
@@ -140,7 +140,7 @@ def get_kuwei_range(serial_num, total_num):
 
         serial_num += 1
         pre_pillar_x = pillar_x
-        if cnt >= 80 or state == 2 or serial_num > total_num:
+        if cnt >= param.MAX_KUWEI_IMAGES_COUNT or state == 2 or serial_num > total_num:
             break
 
     if state == 0:
@@ -156,45 +156,67 @@ def get_kuwei_range(serial_num, total_num):
 '''
     关键帧抽取状态机
 '''
-def key_frame_extractor(serial_images, center_offset, fd):
-    #   state=0: 未找到Fig1 state=1: 已找到Fig1但未找到Fig2 state=2: 已找到Fig2但未找到Fig3
-    #   state=3: 已找到Fig3但未找到Fig4 state=4: 已找到Fig4但未找到Fig5 state=5: 已找到Fig5
-    state = 0
+def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
     key_frames = []
-    fig2_candidates = []
-    fig4_candidates = []
 
-    fig2_max_offset, fig2_min_offset = 16, 6  # 16, 6
-    fig4_max_offset, fig4_min_offset = 18, 8  # 16, 6
-    fig2_start_offset = center_offset - fig2_max_offset
-    fig2_end_offset = center_offset - fig2_min_offset
-    fig4_start_offset = center_offset + fig4_min_offset
-    fig4_end_offset = center_offset + fig4_max_offset
+    if kuwei_type == param.KUWEI_TYPE_3:
+        #   state=0: 未找到Fig1 state=1: 已找到Fig1但未找到Fig2 state=2: 已找到Fig2但未找到Fig3
+        #   state=3: 已找到Fig3但未找到Fig4 state=4: 已找到Fig4但未找到Fig5 state=5: 已找到Fig5
+        state = 0
+        fig2_candidates = []
+        fig4_candidates = []
 
-    for idx, image in enumerate(serial_images):
-        if state == 0:
-            key_frames.append(image)
-            state = 1
-        elif state == 1:
-            if fig2_start_offset <= idx and idx <= fig2_end_offset:
-                fig2_candidates.append(image)
-                continue
-            if idx > fig2_end_offset:
-                key_frames.append(get_perfect_key_frame(fig2_candidates, fd))
-                state = 2
-        elif state == 2 and idx == center_offset:
-            key_frames.append(image)
-            state = 3
-        elif state == 3:
-            if fig4_start_offset <= idx and idx <= fig4_end_offset:
-                fig4_candidates.append(image)
-                continue
-            if idx > fig4_end_offset:
-                key_frames.append(get_perfect_key_frame(fig4_candidates, fd))
-                state = 4
-        elif state == 4 and idx == len(serial_images) - 1:
-            key_frames.append(image)
-            state = 5
+        fig2_start_offset = center_offset - param.KUWEI_TYPE_3_FIG2_MAX_OFFSET
+        fig2_end_offset = center_offset - param.KUWEI_TYPE_3_FIG2_MIN_OFFSET
+        fig4_start_offset = center_offset + param.KUWEI_TYPE_3_FIG4_MIN_OFFSET
+        fig4_end_offset = center_offset + param.KUWEI_TYPE_3_FIG4_MAX_OFFSET
+
+        for idx, image in enumerate(serial_images):
+            if state == 0:
+                key_frames.append(image)
+                state = 1
+            elif state == 1:
+                if fig2_start_offset <= idx and idx <= fig2_end_offset:
+                    fig2_candidates.append(image)
+                    continue
+                if idx > fig2_end_offset:
+                    key_frames.append(get_perfect_key_frame(fig2_candidates, fd))
+                    state = 2
+            elif state == 2 and idx == center_offset:
+                key_frames.append(image)
+                state = 3
+            elif state == 3:
+                if fig4_start_offset <= idx and idx <= fig4_end_offset:
+                    fig4_candidates.append(image)
+                    continue
+                if idx > fig4_end_offset:
+                    key_frames.append(get_perfect_key_frame(fig4_candidates, fd))
+                    state = 4
+            elif state == 4 and idx == len(serial_images) - 1:
+                key_frames.append(image)
+                state = 5
+    elif kuwei_type == param.KUWEI_TYPE_2:
+        #   state=0: 未找到Fig1 state=1: 已找到Fig1但未找到Fig2 state=2: 已找到Fig2但未找到Fig3 state=3: 已找到Fig3
+        state = 0
+        fig2_candidates = []
+
+        fig2_start_offset = center_offset - param.KUWEI_TYPE_2_FIG2_LR_OFFSET
+        fig2_end_offset = center_offset + param.KUWEI_TYPE_2_FIG2_LR_OFFSET
+
+        for idx, image in enumerate(serial_images):
+            if state == 0:
+                key_frames.append(image)
+                state = 1
+            elif state == 1:
+                if fig2_start_offset <= idx and idx <= fig2_end_offset:
+                    fig2_candidates.append(image)
+                    continue
+                if idx > fig2_end_offset:
+                    key_frames.append(get_perfect_key_frame(fig2_candidates, fd))
+                    state = 2
+            elif state == 2 and idx == len(serial_images) - 1:
+                key_frames.append(image)
+                state = 3
 
     return key_frames
 
@@ -202,8 +224,8 @@ def key_frame_extractor(serial_images, center_offset, fd):
 '''
     实现对单个库位的自动关键帧筛选
 '''
-def single_kuwei_key_frame_filter(image_num, save_path, total_num, fd):
-    start_num, end_num, serial_images = get_kuwei_range(image_num, total_num)
+def single_kuwei_key_frame_filter(image_num, save_path, total_num, fd, kuwei_type):
+    start_num, end_num, serial_images = get_kuwei_range(image_num, total_num, kuwei_type)
     if start_num == -1 or end_num == -1:
         return -1, -1
 
@@ -212,7 +234,7 @@ def single_kuwei_key_frame_filter(image_num, save_path, total_num, fd):
     fd.write(kuwei_str + "\n")
     fd.flush()
     center_offset = int((end_num - start_num) / 2)
-    key_frames = key_frame_extractor(serial_images, center_offset, fd)
+    key_frames = key_frame_extractor(serial_images, center_offset, fd, kuwei_type)
     save_key_frames(key_frames, save_path)
 
     return start_num, end_num
@@ -227,13 +249,14 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
     kuwei_num = 1
     f = get_file_description(save_dir, 'filter_log.txt')
     while current_num <= total_num:
+        kuwei_type = param.KUWEI_TYPE_3
         save_path = os.path.join(save_dir, "kuwei" + str(kuwei_num))
         f.write("\nkuwei" + str(kuwei_num) + ":" + "\n")
         f.flush()
-        _, end_num = single_kuwei_key_frame_filter(current_num, save_path, total_num, f)
+        _, end_num = single_kuwei_key_frame_filter(current_num, save_path, total_num, f, kuwei_type)
         kuwei_num += 1
         if end_num == -1:
-            current_num += 50
+            current_num += param.KUWEI_TYPE_THRESHOLD_CHOICES[kuwei_type]
             continue
         current_num = end_num + 1
         # print("Save path: " + save_path)
