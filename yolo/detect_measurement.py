@@ -10,46 +10,39 @@ import datetime
 import torch.backends.cudnn as cudnn
 
 from models.experimental import *
-from utils.datasets import *
+from utils.datasets_measurement import *
 from utils.utils import *
 
 LOG_PATH = r'/home/nvidia/YIJIA/yolov5test2/logs'
+logger = None
 
-# center_x_center = 0
-# conn = 0
-# det_number_det = 0
-# center_y_center = 0
-#
+# 定义一个全局变量，用于标识线程是否应该继续运行
+RUNNING = True
+HUOJIA = '407'
+KUWEI = '1'
+FLOOR = '3'
+SPLIT = 0
 
-# def send_job():
-#     global center_x_center, conn, det_number_det, center_y_center
-#     number_c = 0
-#     state = 0   #表示目前标签所在位置: 0-无标签、1-标签不在范围内、2-标签在范围内
-#     while True:
-#         if det_number_det > 0:
-#             # hdl start
-#             # if state == 2 and 0.26 < center_x_center < 0.76:
-#             #     print('------------双鱼执法------------')
-#             #     res = conn.send(bytes('0/' + str(center_y_center) + '\n', encoding='utf8'))  # 向client端发送数据`
-#             #     time.sleep(0.05)
-#             #     continue
-#             # # hdl end
-#             if 0.46 < center_x_center < 0.56:    #0.46-0.56
-#                 print('-----------------aaaaa-----------------')
-#                 state = 2
-#                 res = conn.send(bytes('2/' + str(center_y_center) + '\n', encoding='utf8'))  # 向client端发送数据`
-#                 number_c = number_c + 1
-#                 print('拍了'+str(number_c)+'张图片')
-#             else:
-#                 print('-----------------bbbbb-----------------')
-#                 state = 1
-#                 res = conn.send(bytes('0/0.5' + '\n', encoding='utf8'))
-#             time.sleep(0.05)
-#         else:
-#             res = conn.send(bytes('0/0.5'+'\n', encoding='utf8'))
-#             print('-----------------ccccc-----------------')
-#             state = 0
-#             time.sleep(0.05)
+# 定义一个函数，用于接收来自服务端的消息
+def receive_messages(client_socket):
+    global RUNNING, HUOJIA, KUWEI, FLOOR, SPLIT, logger
+    while RUNNING:
+        try:
+            # 接收消息
+            message = client_socket.recv(1024).decode('utf-8')
+            if message:
+                print("Received: ", message)
+                logger.info(message)
+                HUOJIA, KUWEI, FLOOR, SPLIT = message.split('/')
+                SPLIT = int(SPLIT)
+        except Exception as e:
+            print("Error receiving message:", e)
+            break
+
+        # 控制接收消息的频率
+        time.sleep(1 / 20)  # 20Hz
+
+
 def setup_logger(name, log_file, level=logging.INFO):
     logger = logging.getLogger(name)
     logger.setLevel(level)
@@ -77,12 +70,6 @@ def lightDetect(img): #通过光斑在图像中的位置以及偏航角
     # Step2: 按比例缩小原图加速运算，提取白色像素坐标
     minimize_ratio = 1
     dst_mini = cv2.resize(dst, (int(dst.shape[1] / minimize_ratio), int(dst.shape[0] / minimize_ratio)))
-    # iterator1: for耗时巨大，1088x720耗时约1.10s
-    # data = []
-    # for x in range(dst_mini.shape[1]):
-    #     for y in range(dst_mini.shape[0]):
-    #         if dst_mini[y][x] == 255:
-    #             data.append(x)
     # iterator2: np.where计算迅速，1088x720耗时约0.006s
     data = np.where(dst_mini == 255)[1]
     
@@ -382,7 +369,7 @@ def led_detect_angles(image):  #通过灯带检测偏航角
 
 
 def detect(save_img=False):  #检测标签
-    global conn, center_x_center, det_number_det, center_y_center
+    global conn, center_x_center, det_number_det, center_y_center, logger
     frequency, label_cnt, yaw_list = 10, 0, []
 
     log_file = os.path.join(LOG_PATH, "log_" + str(datetime.datetime.now().date()) + ".txt")
@@ -426,9 +413,6 @@ def detect(save_img=False):  #检测标签
     names = model.module.names if hasattr(model, 'module') else model.names
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
 
-    # Task_thread = threading.Thread(target=send_job)
-    # Task_thread.start()
-
     # Run inference
     t0 = time.time()
     img = torch.zeros((1, 3, imgsz, imgsz), device=device)  # init img
@@ -443,14 +427,6 @@ def detect(save_img=False):  #检测标签
             img /= 255.0  # 0 - 255 to 0.0 - 1.0
             if img.ndimension() == 3:
                 img = img.unsqueeze(0)
-
-            # n += 1
-            # if n % 60 == 0:
-            #     sk.send(bytes('1/0/0/0/0' + '\n', encoding='utf8'))  # 发送数据给AGV
-            #     n = 0
-            # else:
-            #     sk.send(bytes('0/0/0/0/0' + '\n', encoding='utf8'))  # 发送数据给AGV
-            # continue
 
             # Inference
             t1 = torch_utils.time_synchronized()
@@ -559,59 +535,6 @@ def detect(save_img=False):  #检测标签
                     sk.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8')) #发送数据给AGV
                     print('-----------------ccccc-----------------')
 
-                #     for count_x in range(len(center_x_list)):
-                #         # continue
-                #         if 0.48 < center_x_list[count_x] < 0.78:  # 标签中心点在图片的横坐标在0.48-0.78范围内时
-                #             print('-------------------------------------aaaaa-------------------------------------')
-                #             # alpha = lightDetect(im0)  #通过光斑检测偏航角
-                #             if alpha == 0:
-                #                 sk.send(bytes(
-                #                     '1/' + str(center_x_list[count_x]) + '/' + str(center_y_list[count_x]) + '/' + str(
-                #                         0) + '\n', encoding='utf8'))  # 发送标签位置和偏航角给AGV
-                #             else:
-                #                 yaw_list.append(alpha)
-                #                 label_cnt += 1
-                #                 print('im0:' + str(im0.shape[0]) + "," + str(im0.shape[1]))
-                #                 if label_cnt % frequency == 0:
-                #                     yaw_ban = np.mean(yaw_list)  # 取十次偏航角的均值
-                #                     label_cnt = 0
-                #                     yaw_list = []
-                #                     # sk.send(bytes('1' + '\n', encoding='utf8'))
-                #                     # sk.send(bytes('1/' + str(center_x_center) + '/' + str(center_y_center) + '\n', encoding='utf8'))
-                #                     sk.send(bytes('1/' + str(center_x_list[count_x]) + '/' + str(
-                #                         center_y_list[count_x]) + '/' + str(yaw_ban) + '/' + '\n',
-                #                                   encoding='utf8'))  # 发送标签位置以及偏航角给AGV
-                #                 else:
-                #                     sk.send(bytes('1/' + str(center_x_list[count_x]) + '/' + str(
-                #                         center_y_list[count_x]) + '/' + str(0) + '/' + '\n',
-                #                                   encoding='utf8'))  # 发送标签位置以及偏航角给AGV
-                #             state = 2
-                #     if state == 0:
-                #         print('-----------------bbbbb-------------------')
-                #         sk.send(bytes('0/0/0/0/0\n', encoding='utf8'))  # 发送数据给AGV
-                #     time.sleep(0.05)
-                #
-                # else:
-                # # sk.send(bytes('0/0/0/0/0\n', encoding='utf8'))
-                # sk.send(bytes('0/0/0/' + str(alpha) + '\n', encoding='utf8'))  # 发送数据给AGV
-                # print('-----------------ccccc-----------------')
-
-                # sever
-                    # for count_x in range(len(center_x_list)):
-                    #     if 0.36 < center_x_list[count_x] < 0.65:
-                    #         print('-------------------------------------aaaaa-------------------------------------')
-                    #         state=2
-                    #         res = conn.send(bytes('2/' + str(center_y_center) + '\n', encoding='utf8'))  # 向client端发送数据`
-                    # if state==0:
-                    #     print('-----------------bbbbb-------------------')
-                    #     res = conn.send(bytes('0/0.5' + '\n', encoding='utf8'))
-
-                    # time.sleep(0.05)
-
-                # else:
-                #     res = conn.send(bytes('0/0.5' + '\n', encoding='utf8'))
-                #     print('-----------------ccccc-----------------')
-
                 # Print time (inference + NMS)
                 print('%sDone. (%.3fs)' % (s, t2 - t1))
 
@@ -639,18 +562,6 @@ def detect(save_img=False):  #检测标签
                             vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*fourcc), fps, (w, h))
                         vid_writer.write(im0)
 
-        # else:
-        #     print('没有图片')
-        #
-        #     continue
-
-    # if save_txt or save_img:
-    #     print('Results saved to %s' % os.getcwd() + os.sep + out)
-    #     if platform == 'darwin' and not opt.update:  # MacOS
-    #         os.system('open ' + save_path)
-    #
-    # print('Done. (%.3fs)' % (time.time() - t0))
-
 
 if __name__ == '__main__':
     # global conn, center_x
@@ -662,20 +573,7 @@ if __name__ == '__main__':
     parser.add_argument('--weights', nargs='+', type=str,
             
                         default='/home/nvidia/YIJIA/yolov5test2/runs/best.pt', help='model.pt path(s)')
-    #parser.add_argument('--source', type=str, default='/home/nvidia/YIJIA/barCode_multi/offline/image/new/', help='source')  # file/folder, 0 for webcam
-    # parser.add_argument('--source', type=str, default='/home/nvidia/Pictures/1.jpg', help='source')
-    # parser.add_argument('--source', type=str, default='rtsp://yijia:123@192.168.0.71:8554/streaming/live/1',help='source')
     parser.add_argument('--source', type=str, default='rtsp://yijia:123@192.168.3.233:8554/streaming/live/1',help='source')
-    # parser.add_argument('--source', type=str, default='rtsp://yijia:123@192.168.43.242:8554/streaming/live/1',
-    #                     help='source')
-    # gst_str = ('rtspsrc location={} latency={} ! '
-    #            'rtph264depay ! h264parse ! avdec_h264 ! '
-    #            'nvvidconv ! '
-    #            'video/x-raw, width=(int){}, height=(int){}, '
-    #            'format=(string)BGRx ! '
-    #            'videoconvert ! appsink sync=false').format('rtsp://yijia:123@192.168.3.154:8554/streaming/live/1', 20,
-    #                                                        1088, 720)
-    # parser.add_argument('--source', type=str, default=gst_str, help='source')
     parser.add_argument('--output', type=str, default='inference/output_video', help='output folder')  # output folder
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.4, help='object confidence threshold')
@@ -690,35 +588,30 @@ if __name__ == '__main__':
     opt = parser.parse_args()
     print(opt)
 
-    # sever服务端
-    # sk = socket.socket()  # 创建socket对象
-    # sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # 为了关闭server端不报错
-    # # print('a')
-    # HOST = ''
-    # PORT = 8086
-    # ADDRESS = (HOST, PORT)
-    # sk.bind(ADDRESS)  # 绑定server端ip和端口号
-    # print('等待连接。。。')
-    # sk.listen(5)  # 监听
-    # conn, addr = sk.accept()  # 拿到连接和地址
-    # print('连接成功！')
-
     # client客户端 与agv建立连接
-    sk = socket.socket()
-    sk.connect(('192.168.3.217', 1234))
-    print('连接成功！')
-    # sk.connect(('192.168.3.154', 8001))
-    # print()
-    with torch.no_grad():
-        if opt.update:  # update all models (to fix SourceChangeWarning)
-            for opt.weights in ['yolov5s.pt', 'yolov5m.pt', 'yolov5l.pt', 'yolov5x.pt', 'yolov3-spp.pt']:
-                print('进入detcet')
+    try:
+        client_socket = socket.socket()
+        client_socket.connect(('192.168.3.217', 1234))
+        print('连接成功！')
+
+        # 创建一个线程来接收消息
+        receive_thread = threading.Thread(target=receive_messages, args=(client_socket,))
+        receive_thread.start()
+
+        with torch.no_grad():
+            if opt.update:  # update all models (to fix SourceChangeWarning)
+                for opt.weights in ['yolov5s.pt', 'yolov5m.pt', 'yolov5l.pt', 'yolov5x.pt', 'yolov3-spp.pt']:
+                    print('进入detcet')
+                    detect()
+                    create_pretrained(opt.weights, opt.weights)
+            else:
                 detect()
-                create_pretrained(opt.weights, opt.weights)
-        else:
-            detect()
-    # client
-    sk.close()  # 关闭资源
+    except Exception as e:
+        print('Error: ', e)
+    finally:
+        # client
+        client_socket.close()  # 关闭资源
+        RUNNING = False
 
     # sever
     # conn.close()  # 关闭资源

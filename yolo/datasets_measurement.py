@@ -14,6 +14,7 @@ from PIL import Image, ExifTags
 from torch.utils.data import Dataset
 from tqdm import tqdm
 import socket
+import detect_measurement as detect
 
 from utils.utils import xyxy2xywh, xywh2xyxy, torch_distributed_zero_first
 
@@ -224,6 +225,24 @@ class LoadWebcam:  # for inference
 
 
 global capture
+
+'''
+    清空文件夹下已存在的文件和子文件夹
+'''
+def clear_folder(folder_path):
+    print("[WARNING] Remove existed files and sub-directories. Folder path: ", folder_path)
+    for filename in os.listdir(folder_path):
+        print("[WARNING INFO] removing: ", filename)
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print(f'Failed to delete {file_path}. Reason: {e}')
+    print("[WORK FLOW] Folder cleared.")
+
 class LoadStreams:  # multiple IP or RTSP cameras
     def __init__(self, sources='streams.txt', img_size=640):
         self.mode = 'images'
@@ -263,31 +282,40 @@ class LoadStreams:  # multiple IP or RTSP cameras
 
     def update(self, index, cap):
         n = 0
-        m_pic = 0
-        output_dir = '/home/nvidia/YIJIA/picture/rtsp_picture_20240322/floor4/' #每四帧保存图片文件夹位置
-        existing_imgs = os.listdir(output_dir)
-        last_image_index = 0
-        if existing_imgs:
-            last_image_index = max([int(image.split('.')[0]) for image in existing_imgs])
-            # last_image_index = max([int(image.split('.')[0].split('_')[1]) for image in existing_imgs])
+        output_dir = '/home/nvidia/YIJIA/picture/measurement_images/' #每四帧保存图片文件夹位置
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+            print("Folder created: ", output_dir)
+        else:
+            print("Folder already exists:", output_dir)
+        clear_folder(output_dir)
+
+        image_number = 0
+        save_path = None
         while True:
             if cap.isOpened():
                 n += 1
                 if cap.grab():
+                    if detect.SPLIT == 1 and detect.HUOJIA != 'nul':
+                        image_number = 0
+                        folder_name = '_'.join([detect.HUOJIA, detect.FLOOR, detect.KUWEI])
+                        save_path = os.path.join(output_dir, folder_name)
+                        if not os.path.exists(save_path):
+                            os.makedirs(save_path)
+                            print("Start saving a new kuwei: ", folder_name)
+
                     if n % 4 == 0:  # read every 4th frame每四帧检测一次标签
                         success, im = cap.retrieve()
                         n = 0
                         if success:
                             self.imgs[index] = im
-                            m_pic = m_pic + 1
-                            image_name = last_image_index + m_pic
-                            if image_name > last_image_index + 300:
-                                # 将时间戳转换为日期和时间格式
-                                # formatted_date = time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(time.time()))
-                                # file_name = formatted_date + '_' + str(image_name)
-                                file_name = str(image_name)
-                                # cv2.imwrite(output_dir + str(file_name) + '.jpg', im) #每四帧保存一张图片
-                                print("Saving " + str(file_name) + "......")
+                            if detect.HUOJIA != 'nul':
+                                image_number += 1
+                                formatted_number = "%04d" % image_number
+                                image_name = '_'.join([formatted_number, detect.HUOJIA, detect.FLOOR, detect.KUWEI])
+                                cv2.imwrite(os.path.join(save_path, image_name + '.jpg'), im)
+                                print("Saving image: ", image_name + '.jpg')
                         else:
                             self.imgs[index] = np.zeros_like(self.imgs[index])
                             print("重连中......")
