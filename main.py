@@ -1,8 +1,22 @@
 import horizontal_main
 import vertical_main
-from serial_filter import batch_kuwei_key_frame_filter
+from serial_filter import batch_kuwei_key_frame_filter, batch_kuwei_key_frame_filter_protocol
 import parameters as param
 from utils.file_util import clear_folder
+
+def main():
+    batch_kuwei_key_frame_filter(img_dir, data_src_dir)
+    horizontal_main.batch_serial_measurement(data_src_dir, data_dst_dir)
+    vertical_main.batch_serial_measurement(data_src_dir, data_dst_dir)
+    print("[END INFO] Measurement result in the directory: ", data_dst_dir)
+
+
+def main_protocol():
+    batch_kuwei_key_frame_filter_protocol(img_dir, data_src_dir)
+    horizontal_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
+    vertical_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
+    print("[END INFO] Measurement result in the directory: ", data_dst_dir)
+
 
 if __name__ == '__main__':
     print("[START INFO] Start measurement work flow.")
@@ -29,7 +43,4 @@ if __name__ == '__main__':
     clear_folder(data_dst_dir)
     
     if args.kuwei_type == param.KUWEI_TYPE_3:
-        batch_kuwei_key_frame_filter(img_dir, data_src_dir)
-        horizontal_main.batch_serial_measurement(data_src_dir, data_dst_dir)
-        vertical_main.batch_serial_measurement(data_src_dir, data_dst_dir)
-        print("[END INFO] Measurement result in the directory: ", data_dst_dir)
+        main()

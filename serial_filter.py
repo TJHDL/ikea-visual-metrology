@@ -154,6 +154,71 @@ def get_kuwei_range(serial_num, total_num, kuwei_type):
 
 
 '''
+    获取序列图片中的库位开始点和结束点对应的图片序号(protocol)
+'''
+def get_kuwei_range_protocol(image_path, total_num, kuwei_type):
+    #   state=0: 未找到开始点 state=1: 已找到开始点但未找到结束点 state=2: 已找到结束点
+    state = 0
+    cnt = 0
+    cnt_threshold = param.KUWEI_TYPE_THRESHOLD_CHOICES[kuwei_type]
+    start_num = 1
+    end_num = 1
+    serial_images = []
+    pillar_x = 0
+    pre_pillar_x = 0
+
+    image_names = os.listdir(image_path).sort()
+
+    for image_name in image_names:
+        cnt += 1
+        try:
+            raw_image = cv2.imread(os.path.join(image_path, image_name))
+        except Exception as e:
+            print("第" + str(cnt) + "张图片缺失")
+            cnt += 1
+            continue
+        if raw_image is None:
+            print("第" + str(cnt) + "张图片缺失")
+            cnt += 1
+            continue
+        width = raw_image.shape[1]
+        height = raw_image.shape[0]
+        pillar_x = detect_pillar_position(raw_image, cnt, width, height)
+        x_ratio = pillar_x / width
+        pre_x_ratio = pre_pillar_x / width
+
+        # 避免库位划分时语义信息误识别导致的突变
+        gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
+        if cnt > 1 and gap_x_ratio >= 0.1:
+            continue
+
+        if state == 0 and (param.START_POS_RANGE_LEFT <= x_ratio and x_ratio <= param.START_POS_RANGE_RIGHT):
+            start_num = cnt
+            cnt = 0
+            state = 1
+        elif state == 1 and cnt >= cnt_threshold and (param.END_POS_RANGE_LEFT <= x_ratio and x_ratio <= param.END_POS_RANGE_RIGHT):
+            end_num = cnt
+            cnt = 0
+            state = 2
+
+        if state == 1 or state == 2:
+            serial_images.append(raw_image)
+
+        pre_pillar_x = pillar_x
+        if cnt >= param.MAX_KUWEI_IMAGES_COUNT or state == 2 or cnt > total_num:
+            break
+
+    if state == 0:
+        print("[WARNING] 未找到开始点")
+        return -1, -1, None
+    elif state == 1:
+        print("[ERROR] 未找到结束点")
+        return -1, -1, None
+
+    return start_num, end_num, serial_images
+
+
+'''
     关键帧抽取状态机
 '''
 def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
@@ -267,7 +332,59 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
     print("[WORK FLOW] Spliting kuweis complete.")
 
 
+'''
+    实现对单个库位的自动关键帧筛选(protocol)
+'''
+def single_kuwei_key_frame_filter_protocol(image_path, save_path, fd):
+    total_num = len(os.listdir(image_path))
+    kuwei_type = param.KUWEI_TYPE_3
+    if total_num <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD:
+        kuwei_type = param.KUWEI_TYPE_2
+
+    start_num, end_num, serial_images = get_kuwei_range_protocol(image_path, total_num, kuwei_type)
+
+    kuwei_str = "起始序号: " + str(start_num) + " 终止序号: " + str(end_num) + " 库位图片数量: " + str(len(serial_images))
+    print("[INFO] " + kuwei_str)
+    fd.write(kuwei_str + "\n")
+    fd.flush()
+    center_offset = int((end_num - start_num) / 2)
+    key_frames = key_frame_extractor(serial_images, center_offset, fd, kuwei_type)
+    save_key_frames(key_frames, save_path)
+
+    return start_num, end_num
+    
+
+'''
+    批量完成序列化图片筛选(protocol)
+'''
+def batch_kuwei_key_frame_filter_protocol(image_dir, save_dir):
+    print("[WORK FLOW] Starting spliting kuweis.")
+    f = get_file_description(save_dir, 'filter_log.txt')
+    kuwei_dirs = os.listdir(image_dir)
+
+    try:
+        for kuwei_dir in kuwei_dirs:
+            kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(image_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD else param.KUWEI_TYPE_3
+            image_path = os.path.join(image_dir, image_path)
+            save_path = os.path.join(save_dir, kuwei_dir + "_" + str(kuwei_type))
+            f.write("\nkuwei: " + kuwei_dir + "\n")
+            f.flush()
+            _, end_num = single_kuwei_key_frame_filter_protocol(image_path, save_path, f)
+            if end_num == -1:
+                f.write("Occured error: kuwei split happen to problem!\n")
+                f.flush()
+                print("[ERROR] Can't find kuwei tail image!!!")
+    except Exception as e:
+        print("Exception: ", repr(e))
+        
+    close_file_description(f)
+    print("[INFO] Auto key frame filter complete!")
+    print("[INFO] Filtered kuwei num: " + str(len([dir_name for dir_name in os.listdir(save_dir) if not dir_name.endswith(".txt")])))
+    print("[WORK FLOW] Spliting kuweis complete.")
+
+
 if __name__ == '__main__':
     # f = get_file_description(save_dir, 'test_log.txt')
     # single_kuwei_key_frame_filter(image_num, save_dir, total_num, f)
     batch_kuwei_key_frame_filter(image_dir, save_dir)
+    # batch_kuwei_key_frame_filter_protocol(image_dir, save_dir)

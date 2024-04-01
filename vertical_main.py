@@ -402,6 +402,33 @@ def batch_serial_measurement(data_src_dir, data_dst_dir):
     print("[WORK FLOW] Measuring vertical size complete.")
 
 
+'''
+    批量完成图片的序列化测量(protocol)
+'''
+def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
+    print("[WORK FLOW] Starting measuring vertical size.")
+    dirs = os.listdir(data_src_dir)
+    for dir in dirs:
+        if dir.endswith('.txt'):
+            continue
+        print("[INFO] Measuring " + dir + " vertical size......")
+        kuwei_type = int(dir.split('_')[-1])
+        param.FLOOR_NUM = int(dir.split('_')[2])
+        param.H_CAMERA = param.FLOOR_NUM * param.FLOOR_HEIGHT \
+            - (param.CAR_HEIGHT + param.UAV_HEIGHT[param.FLOOR_NUM]) - param.TIEPIAN_WIDTH
+        try:
+            Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir), kuwei_type)
+        except Exception as e:
+            f = get_file_description(data_dst_dir, 'fail_log.txt')
+            f.write(dir + " vertical measurement fail! Please check this kuwei.")
+            print("Exception info: " + repr(e), file=f)
+            close_file_description(f)
+
+    print("[INFO] Measurement task complete!")
+    print("[WORK FLOW] Measuring vertical size complete.")
+
+
 if __name__ == '__main__':
     # Serial_Images_Measurement(image_dir, save_dir)
     batch_serial_measurement(data_src_dir, data_dst_dir)
+    # batch_serial_measurement_protocol(data_src_dir, data_dst_dir)

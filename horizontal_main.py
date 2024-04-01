@@ -515,6 +515,30 @@ def batch_serial_measurement(data_src_dir, data_dst_dir):
     print("[WORK FLOW] Measuring horizontal size complete.")
 
 
+'''
+    批量完成图片的序列化测量(protocol)
+'''
+def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
+    print("[WORK FLOW] Starting measuring horizontal size.")
+    dirs = os.listdir(data_src_dir)
+    for dir in dirs:
+        if dir.endswith('.txt'):
+            continue
+        print("[INFO] Measuring " + dir + " horizontal size......")
+        kuwei_type = str(dir.split('_')[-1])
+        try:
+            Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir), kuwei_type)
+        except Exception as e:
+            f = get_file_description(data_dst_dir, 'fail_log.txt')
+            f.write(dir + " horizontal measurement fail! Please check this kuwei.")
+            print("Exception info: " + repr(e), file=f)
+            close_file_description(f)
+
+    print("[INFO] Measurement task complete!")
+    print("[WORK FLOW] Measuring horizontal size complete.")
+
+
 if __name__ == '__main__':
     # Serial_Images_Measurement(image_dir, save_dir)
     batch_serial_measurement(data_src_dir, data_dst_dir)
+    # batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
