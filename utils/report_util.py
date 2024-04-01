@@ -2,12 +2,17 @@ import os
 import xlrd
 from xlutils.copy import copy
 import time
+import parameters as param
+from utils import get_file_description, close_file_description
+
+xls_file = r'report\407-03-00-60_20231129.xls'
 
 def get_kuwei_info_from_images(folder_path):
     image_names = os.listdir(folder_path)
     image_names.sort()
 
     huojia, floor = folder_path.split('/')[-1].split('_')[0], folder_path.split('/')[-1].split('_')[1]
+    kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(folder_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD else param.KUWEI_TYPE_3
 
     kuwei_list = []
     for image_name in image_names:
@@ -15,7 +20,7 @@ def get_kuwei_info_from_images(folder_path):
         if not kuwei_list.__contains__(kuwei):
             kuwei_list.append(kuwei)
     
-    return huojia, floor, kuwei_list
+    return huojia, floor, kuwei_list, kuwei_type
 
 
 def get_xls_workbook_sheet(xls_file):
@@ -48,6 +53,24 @@ def edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_row
             elif not safe:
                 new_book.get_sheet(0).write(idx, 10, "放置异常")
     new_book.save(xls_file)
+
+
+def measurement_kuwei_projection(data_src_dir, data_dst_dir, xls_file):
+    workbook, sheet, new_book = get_xls_workbook_sheet(xls_file)
+    valid_rows = count_xls_valid_rows(sheet)
+
+    src_dirs = os.listdir(data_src_dir)
+    for src_dir in src_dirs:
+        huojia, floor, kuwei_list, kuwei_type = get_kuwei_info_from_images(os.path.join(data_src_dir, src_dir))
+        dst_dir = src_dir + '_' + str(kuwei_type)
+        fd = get_file_description(os.path.join(data_dst_dir, dst_dir), "measurement.txt")
+        safe = True
+        '''
+            toDo:判断该库位内的每个货物的安全情况
+        '''
+        for kuwei in kuwei_list:
+            edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_rows)
+        close_file_description(fd)
 
 
 if __name__ == '__main__':

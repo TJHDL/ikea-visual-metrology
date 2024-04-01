@@ -413,7 +413,7 @@ def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
             continue
         print("[INFO] Measuring " + dir + " vertical size......")
         kuwei_type = int(dir.split('_')[-1])
-        param.FLOOR_NUM = int(dir.split('_')[2])
+        param.FLOOR_NUM = int(dir.split('_')[1])
         param.H_CAMERA = param.FLOOR_NUM * param.FLOOR_HEIGHT \
             - (param.CAR_HEIGHT + param.UAV_HEIGHT[param.FLOOR_NUM]) - param.TIEPIAN_WIDTH
         try:
