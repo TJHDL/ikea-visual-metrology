@@ -1,4 +1,5 @@
 import os
+import re
 import xlrd
 from xlutils.copy import copy
 import time
@@ -37,9 +38,101 @@ def get_xls_workbook_sheet(xls_file):
 
 def count_xls_valid_rows(sheet):
     valid_rows = sum(1 for row in range(sheet.nrows) if any(sheet.cell(row, col).value for col in range(sheet.ncols)))
-    print("Excel valid rows: ", valid_rows)
+    print("[INFO] Excel valid rows: ", valid_rows)
 
     return valid_rows
+
+
+def get_txt_key_row_number(fd):
+    key_row_dict = {"horizontal_gap":-1, "horizontal_box":-1, "vertical_gap":-1}
+
+    lines = fd.readlines()
+    for idx, line in enumerate(lines):
+        line = line.strip()
+
+        if re.search("横向间隙尺寸", line):
+            key_row_dict["horizontal_gap"] = idx
+        elif re.search("横向货物尺寸", line):
+            key_row_dict["horizontal_box"] = idx
+        elif re.search("纵向间隙尺寸", line):
+            key_row_dict["vertical_gap"] = idx
+    
+    return key_row_dict
+
+
+def get_txt_measurement_result(fd, kuwei_type, key_row_dict):
+    if kuwei_type == param.KUWEI_TYPE_3:
+        horizontal_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY, "gap3":param.POSITIVE_INFINITY, "gap4":param.POSITIVE_INFINITY}
+        vertical_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY, "gap3":param.POSITIVE_INFINITY}
+    elif kuwei_type == param.KUWEI_TYPE_2:
+        horizontal_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY, "gap3":param.POSITIVE_INFINITY}
+        vertical_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY}
+    else:
+        print("[ERROR] Unknown kuwei type!!!")
+        raise Exception("Kuwei type invalid!")
+    
+    lines = fd.readlines()
+    for idx, line in enumerate(lines):
+        line = line.strip()
+
+        if key_row_dict['horizontal_gap'] != -1 and idx > key_row_dict['horizontal_gap'] and idx < key_row_dict['vertical_gap']:
+            if re.search("间隙1", line):
+                horizontal_size_dict["gap1"] = float(line.split(':')[-1])
+            elif re.search("间隙2", line):
+                horizontal_size_dict["gap2"] = float(line.split(':')[-1])
+            elif re.search("间隙3", line):
+                horizontal_size_dict["gap3"] = float(line.split(':')[-1])
+            elif re.search("间隙4", line):
+                horizontal_size_dict["gap4"] = float(line.split(':')[-1])
+        elif key_row_dict['vertical_gap'] != -1 and idx > key_row_dict['vertical_gap']:
+            if re.search("间隙1", line):
+                vertical_size_dict["gap1"] = float(line.split(':')[-1])
+            elif re.search("间隙2", line):
+                vertical_size_dict["gap2"] = float(line.split(':')[-1])
+            elif re.search("间隙3", line):
+                vertical_size_dict["gap3"] = float(line.split(':')[-1])
+    
+    return horizontal_size_dict, vertical_size_dict
+
+
+def judge_safe_dict(horizontal_size_dict, vertical_size_dict, kuwei_type):
+    safe_list = []
+    
+    if kuwei_type == param.KUWEI_TYPE_3:
+        if horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap4'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap3'] < param.VERTICAL_SAFE_THRESHOLD:
+            safe_list.append(False)
+        else:
+            safe_list.append(True)
+
+        if horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap2'] < param.VERTICAL_SAFE_THRESHOLD:
+            safe_list.append(False)
+        else:
+            safe_list.append(True)
+
+        if horizontal_size_dict['gap1'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap1'] < param.VERTICAL_SAFE_THRESHOLD:
+            safe_list.append(False)
+        else:
+            safe_list.append(True)
+    elif kuwei_type == param.KUWEI_TYPE_2:
+        if horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap2'] < param.VERTICAL_SAFE_THRESHOLD:
+            safe_list.append(False)
+        else:
+            safe_list.append(True)
+
+        if horizontal_size_dict['gap1'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap1'] < param.VERTICAL_SAFE_THRESHOLD:
+            safe_list.append(False)
+        else:
+            safe_list.append(True)
+    else:
+        print("[ERROR] Unknown kuwei type!!!")
+        raise Exception("Kuwei type invalid!")
+
+    return safe_list
 
 
 def edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_rows):
@@ -47,7 +140,7 @@ def edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_row
         if sheet.cell_value(idx, 0) == huojia and sheet.cell_value(idx, 1) == kuwei and sheet.cell_value(idx, 2) == floor:
             current_timestamp = time.time()
             formatted_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_timestamp))
-            new_book.get_sheet(0).write(idx, 9, formatted_time)  # 将拍摄时间输入到表格
+            new_book.get_sheet(0).write(idx, 9, formatted_time)  # 将修改时间输入到表格
             if safe:
                 new_book.get_sheet(0).write(idx, 10, "正常")
             elif not safe:
@@ -64,12 +157,14 @@ def measurement_kuwei_projection(data_src_dir, data_dst_dir, xls_file):
         huojia, floor, kuwei_list, kuwei_type = get_kuwei_info_from_images(os.path.join(data_src_dir, src_dir))
         dst_dir = src_dir + '_' + str(kuwei_type)
         fd = get_file_description(os.path.join(data_dst_dir, dst_dir), "measurement.txt")
-        safe = True
+        key_row_dict = get_txt_key_row_number(fd)
+        horizontal_size_dict, vertical_size_dict = get_txt_measurement_result(fd, kuwei_type, key_row_dict)
+        safe_list = judge_safe_dict(horizontal_size_dict, vertical_size_dict, kuwei_type)
         '''
             toDo:判断该库位内的每个货物的安全情况
         '''
-        for kuwei in kuwei_list:
-            edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_rows)
+        for idx, kuwei in enumerate(kuwei_list):
+            edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe_list[idx], valid_rows)
         close_file_description(fd)
 
 

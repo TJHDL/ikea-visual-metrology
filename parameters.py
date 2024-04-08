@@ -66,6 +66,14 @@ CENTER_POINT_RIGHT_THRESHOLD = 0.65
 
 KUWEI_TYPE_IMAGES_NUM_THRESHOLD = 40
 
+# 正无穷大
+POSITIVE_INFINITY = float('inf')
+# 负无穷大
+NEGATIVE_INFINITY = float('-inf')
+
+HORIZONTAL_SAFE_THRESHOLD = 2   #cm
+VERTICAL_SAFE_THRESHOLD = 5     #cm
+
 def get_parser_for_measurement():
     parser = argparse.ArgumentParser(description='Arguments for spliting kuwei and measurement')
     parser.add_argument('--img_dir', type=str, default=r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4',
