@@ -6,6 +6,7 @@
 import os
 import cv2
 import shutil
+import parameters as param
 
 '''
     将获取的关键帧保存至目标位置
@@ -22,8 +23,8 @@ def save_key_frames(key_frames, save_dir):
 '''
 def get_head_tail_sorted_number(image_dir):
     files = os.listdir(image_dir)
-    max_number = 0
-    min_number = len(files)
+    max_number = param.NEGATIVE_INFINITY
+    min_number = param.POSITIVE_INFINITY
     for file in files:
         number = int(file.split('.')[0])    # without timestamp
         # number = int(file.split('.')[0].split('_')[1])  # with timestamp

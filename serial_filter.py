@@ -75,7 +75,7 @@ def detect_pillar_position(raw_image, serial_num, width, height):
     if pillar_x == -1:
         return pillar_x
 
-    radius = 5
+    # radius = 5
     # print("Circle position: x=" + str(pillar_x) + " y=" + str(int(height / 2)))
     # cv2.circle(raw_image, (pillar_x, int(height / 2)), radius, (0, 0, 255), 3)
     # cv2.namedWindow(str(serial_num), 0)
@@ -89,7 +89,7 @@ def detect_pillar_position(raw_image, serial_num, width, height):
 '''
     获取序列图片中的库位开始点和结束点对应的图片序号
 '''
-def get_kuwei_range(serial_num, total_num, kuwei_type):
+def get_kuwei_range(image_dir, serial_num, total_num, kuwei_type):
     #   state=0: 未找到开始点 state=1: 已找到开始点但未找到结束点 state=2: 已找到结束点
     state = 0
     cnt = 0
@@ -121,10 +121,11 @@ def get_kuwei_range(serial_num, total_num, kuwei_type):
         # print("pillar x pos: ", x_ratio)
 
         # 避免库位划分时语义信息误识别导致的突变
-        gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
-        if cnt > 1 and gap_x_ratio >= 0.1:
-            serial_num += 1
-            continue
+        if kuwei_type == param.KUWEI_TYPE_3:
+            gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
+            if cnt > 1 and gap_x_ratio >= 0.1:
+                serial_num += 1
+                continue
 
         if state == 0 and (param.START_POS_RANGE_LEFT <= x_ratio and x_ratio <= param.START_POS_RANGE_RIGHT):
             start_num = serial_num
@@ -238,8 +239,10 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
 
         for idx, image in enumerate(serial_images):
             if state == 0:
-                key_frames.append(image)
-                state = 1
+                points = BoxMPR_inference(image)
+                if len(points) == 2 or idx >= 2:
+                    key_frames.append(image)
+                    state = 1
             elif state == 1:
                 if fig2_start_offset <= idx and idx <= fig2_end_offset:
                     fig2_candidates.append(image)
@@ -258,6 +261,12 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
                     key_frames.append(get_perfect_key_frame(fig4_candidates, fd))
                     state = 4
             elif state == 4 and idx == len(serial_images) - 1:
+                if len(BoxMPR_inference(serial_images[idx])) == 2:
+                    image = serial_images[idx]
+                elif len(BoxMPR_inference(serial_images[idx - 1])) == 2:
+                    image = serial_images[idx - 1]
+                else:
+                    image = serial_images[idx - 2]
                 key_frames.append(image)
                 state = 5
     elif kuwei_type == param.KUWEI_TYPE_2:
@@ -270,8 +279,10 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
 
         for idx, image in enumerate(serial_images):
             if state == 0:
-                key_frames.append(image)
-                state = 1
+                points = BoxMPR_inference(image)
+                if len(points) == 2 or idx >= 2:
+                    key_frames.append(image)
+                    state = 1
             elif state == 1:
                 if fig2_start_offset <= idx and idx <= fig2_end_offset:
                     fig2_candidates.append(image)
@@ -280,6 +291,12 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
                     key_frames.append(get_perfect_key_frame(fig2_candidates, fd))
                     state = 2
             elif state == 2 and idx == len(serial_images) - 1:
+                if len(BoxMPR_inference(serial_images[idx])) == 2:
+                    image = serial_images[idx]
+                elif len(BoxMPR_inference(serial_images[idx - 1])) == 2:
+                    image = serial_images[idx - 1]
+                else:
+                    image = serial_images[idx - 2]
                 key_frames.append(image)
                 state = 3
 
@@ -289,8 +306,8 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
 '''
     实现对单个库位的自动关键帧筛选
 '''
-def single_kuwei_key_frame_filter(image_num, save_path, total_num, fd, kuwei_type):
-    start_num, end_num, serial_images = get_kuwei_range(image_num, total_num, kuwei_type)
+def single_kuwei_key_frame_filter(image_dir, image_num, save_path, total_num, fd, kuwei_type):
+    start_num, end_num, serial_images = get_kuwei_range(image_dir, image_num, total_num, kuwei_type)
     if start_num == -1 or end_num == -1:
         return -1, -1
 
@@ -318,7 +335,7 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
         save_path = os.path.join(save_dir, "kuwei" + str(kuwei_num))
         f.write("\nkuwei" + str(kuwei_num) + ":" + "\n")
         f.flush()
-        _, end_num = single_kuwei_key_frame_filter(current_num, save_path, total_num, f, kuwei_type)
+        _, end_num = single_kuwei_key_frame_filter(image_dir, current_num, save_path, total_num, f, kuwei_type)
         kuwei_num += 1
         if end_num == -1:
             current_num += param.KUWEI_TYPE_THRESHOLD_CHOICES[kuwei_type]
@@ -364,8 +381,8 @@ def batch_kuwei_key_frame_filter_protocol(image_dir, save_dir):
 
     try:
         for kuwei_dir in kuwei_dirs:
+            image_path = os.path.join(image_dir, kuwei_dir)
             kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(image_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD else param.KUWEI_TYPE_3
-            image_path = os.path.join(image_dir, image_path)
             save_path = os.path.join(save_dir, kuwei_dir + "_" + str(kuwei_type))
             f.write("\nkuwei: " + kuwei_dir + "\n")
             f.flush()

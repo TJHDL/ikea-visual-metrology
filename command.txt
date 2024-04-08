@@ -1,1 +1,2 @@
 python main.py --floor 4 --kuwei_type 3
+python main.py --img_dir C:\Users\95725\Desktop\rtsp_picture_20240301 --floor 4 --kuwei_type 2
