@@ -86,5 +86,9 @@ def get_parser_for_measurement():
                         help="Floor number of captured images.")
     parser.add_argument('--kuwei_type', type=int, choices=[3, 2], default=3,
                         help="Measured kuwei type.")
+    parser.add_argument('--use_protocol', type=bool, default=False,
+                        help="Whether use protocol to save images or not.")
+    parser.add_argument('--xls_file', type=str, default=r'report\407-03-00-60_20231129.xls',
+                        help="Measurement result report excel file path.")
     
     return parser
