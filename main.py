@@ -3,16 +3,16 @@ import vertical_main
 from serial_filter import batch_kuwei_key_frame_filter, batch_kuwei_key_frame_filter_protocol
 import parameters as param
 from utils.file_util import clear_folder
-from utils.report_util import measurement_kuwei_projection
+from utils.report_util import measurement_kuwei_projection, get_xls_workbook_sheet, count_xls_valid_rows, edit_report
 
-def main(data_src_dir, data_dst_dir):
+def measurement_main(img_dir, data_src_dir, data_dst_dir):
     batch_kuwei_key_frame_filter(img_dir, data_src_dir)
     horizontal_main.batch_serial_measurement(data_src_dir, data_dst_dir)
     vertical_main.batch_serial_measurement(data_src_dir, data_dst_dir)
     print("[END INFO] Measurement result in the directory: ", data_dst_dir)
 
 
-def main_protocol(data_src_dir, data_dst_dir, xls_file):
+def measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file):
     batch_kuwei_key_frame_filter_protocol(img_dir, data_src_dir)
     horizontal_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
     vertical_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
@@ -23,7 +23,7 @@ def main_protocol(data_src_dir, data_dst_dir, xls_file):
     print("[END INFO] Measurement result report in the directory: ", xls_file)
 
 
-if __name__ == '__main__':
+def workflow_main():
     print("[START INFO] Start measurement work flow.")
     parser = param.get_parser_for_measurement()
     args = parser.parse_args()
@@ -52,6 +52,18 @@ if __name__ == '__main__':
     
     if not use_protocol:
         if args.kuwei_type == param.KUWEI_TYPE_3:
-            main(data_src_dir, data_dst_dir)
+            measurement_main(img_dir, data_src_dir, data_dst_dir)
     elif use_protocol:
-        main_protocol(data_src_dir, data_dst_dir, xls_file)
+        measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file)
+
+
+def report_generation_test():
+    xls_file = r'report\407-03-00-60_20231129.xls'
+    workbook, sheet, new_book = get_xls_workbook_sheet(xls_file)
+    valid_rows = count_xls_valid_rows(sheet)
+    edit_report(xls_file, sheet, new_book, huojia="403", floor="3", kuwei="6", safe=True, valid_rows=valid_rows)
+
+
+if __name__ == '__main__':
+    workflow_main()
+    # report_generation_test()

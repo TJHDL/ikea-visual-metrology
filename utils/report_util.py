@@ -160,9 +160,7 @@ def measurement_kuwei_projection(data_src_dir, data_dst_dir, xls_file):
         key_row_dict = get_txt_key_row_number(fd)
         horizontal_size_dict, vertical_size_dict = get_txt_measurement_result(fd, kuwei_type, key_row_dict)
         safe_list = judge_safe_dict(horizontal_size_dict, vertical_size_dict, kuwei_type)
-        '''
-            toDo:判断该库位内的每个货物的安全情况
-        '''
+
         for idx, kuwei in enumerate(kuwei_list):
             edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe_list[idx], valid_rows)
         close_file_description(fd)
