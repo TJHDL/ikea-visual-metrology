@@ -14,9 +14,9 @@ from PIL import Image, ExifTags
 from torch.utils.data import Dataset
 from tqdm import tqdm
 import socket
-import detect_measurement as detect
 
 from utils.utils import xyxy2xywh, xywh2xyxy, torch_distributed_zero_first
+import utils.protocol as protocol
 
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
 img_formats = ['.bmp', '.jpg', '.jpeg', '.png', '.tif', '.tiff','.dng']
@@ -283,6 +283,8 @@ class LoadStreams:  # multiple IP or RTSP cameras
     def update(self, index, cap):
         n = 0
         output_dir = '/home/nvidia/YIJIA/picture/measurement_images/' #每四帧保存图片文件夹位置
+        timestamp = time.strftime("%Y-%m-%d--%H-%M-%S", time.localtime())
+        output_dir = os.path.join(output_dir, timestamp)
 
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
@@ -297,9 +299,9 @@ class LoadStreams:  # multiple IP or RTSP cameras
             if cap.isOpened():
                 n += 1
                 if cap.grab():
-                    if detect.SPLIT == 1 and detect.HUOJIA != 'nul':
+                    if protocol.SPLIT == 1 and protocol.HUOJIA != 'nul':
                         image_number = 0
-                        folder_name = '_'.join([detect.HUOJIA, detect.FLOOR, detect.KUWEI])
+                        folder_name = '_'.join([protocol.HUOJIA, protocol.FLOOR, protocol.KUWEI])
                         save_path = os.path.join(output_dir, folder_name)
                         if not os.path.exists(save_path):
                             os.makedirs(save_path)
@@ -310,10 +312,10 @@ class LoadStreams:  # multiple IP or RTSP cameras
                         n = 0
                         if success:
                             self.imgs[index] = im
-                            if detect.HUOJIA != 'nul':
+                            if protocol.HUOJIA != 'nul':
                                 image_number += 1
                                 formatted_number = "%04d" % image_number
-                                image_name = '_'.join([formatted_number, detect.HUOJIA, detect.FLOOR, detect.KUWEI])
+                                image_name = '_'.join([formatted_number, protocol.HUOJIA, protocol.FLOOR, protocol.KUWEI])
                                 cv2.imwrite(os.path.join(save_path, image_name + '.jpg'), im)
                                 print("Saving image: ", image_name + '.jpg')
                         else:

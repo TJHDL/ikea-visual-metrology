@@ -13,19 +13,17 @@ from models.experimental import *
 from utils.datasets_measurement import *
 from utils.utils import *
 
+import utils.protocol as protocol
+
 LOG_PATH = r'/home/nvidia/YIJIA/yolov5test2/logs'
 logger = None
 
 # 定义一个全局变量，用于标识线程是否应该继续运行
 RUNNING = True
-HUOJIA = '407'
-KUWEI = '1'
-FLOOR = '3'
-SPLIT = 0
 
 # 定义一个函数，用于接收来自服务端的消息
 def receive_messages(client_socket):
-    global RUNNING, HUOJIA, KUWEI, FLOOR, SPLIT, logger
+    global RUNNING, logger
     while RUNNING:
         try:
             # 接收消息
@@ -33,10 +31,11 @@ def receive_messages(client_socket):
             if message:
                 print("Received: ", message)
                 logger.info(message)
-                HUOJIA, KUWEI, FLOOR, SPLIT = message.split('/')
-                SPLIT = int(SPLIT)
+                infos = message.split('/')
+                protocol.HUOJIA, protocol.KUWEI, protocol.FLOOR, protocol.SPLIT = infos[0], infos[1], infos[2], infos[3]
+                protocol.SPLIT = int(protocol.SPLIT)
         except Exception as e:
-            print("Error receiving message:", e)
+            print("Error receiving message:", str(e))
             break
 
         # 控制接收消息的频率
@@ -91,7 +90,7 @@ def lightDetect(img): #通过光斑在图像中的位置以及偏航角
     # Step5: 根据关系 tanα = tan42° * x_ratio 计算偏航角alpha,单位°
     #alpha = math.atan(math.tan(math.radians(42)) * x_ratio)
     alpha = math.degrees(math.atan(math.tan(math.radians(42)) * x_ratio))
-    print("估计的偏航角alpha: " + str(alpha))
+    # print("估计的偏航角alpha: " + str(alpha))
 
     return alpha
 
@@ -486,7 +485,7 @@ def detect(save_img=False):  #检测标签
                         box_height = xywh[3] * im0.shape[0]
                         width2.append(box_width)
                         height2.append(box_height)
-                        print('box_width / box_height :',box_width / box_height )
+                        # print('box_width / box_height :',box_width / box_height )
                         #if box_width / box_height >= 2.5:
                             #print("Detect label in crossbeam, filter it!")
                             #continue
@@ -515,7 +514,7 @@ def detect(save_img=False):  #检测标签
                     for count_x in range(len(center_x_list)):
                         # continue
                         if 0.48<center_x_list[count_x]<0.78: #标签中心点在图片的横坐标在0.48-0.78范围内时
-                            print('-------------------------------------aaaaa-------------------------------------')
+                            # print('-------------------------------------aaaaa-------------------------------------')
                             alpha_guangban = lightDetect(im0)
                             ratio2 = width2[count_x] / height2[count_x]
                             log_request(logger, time.time(), alpha_guangban, alpha_led, ratio2)
@@ -523,7 +522,7 @@ def detect(save_img=False):  #检测标签
                             sk.send(bytes('1/' + str(center_x_list[count_x]) + '/' + str(center_y_list[count_x]) + '/' + '0' + '/' + str(alpha_led) + '\n', encoding='utf8'))  # 发送标签位置和偏航角给AGV
                             state=2
                     if state == 0:
-                        print('-----------------bbbbb-------------------')
+                        # print('-----------------bbbbb-------------------')
                         log_request(logger, time.time(), 0, alpha_led, 0)
                         # sk.send(bytes('0/0/0/0/0\n', encoding='utf8')) #发送数据给AGV
                         sk.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8'))  # 发送数据给AGV
@@ -533,14 +532,14 @@ def detect(save_img=False):  #检测标签
                     log_request(logger, time.time(), 0, alpha_led, 0)
                     # sk.send(bytes('0/0/0/0/0\n', encoding='utf8'))
                     sk.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8')) #发送数据给AGV
-                    print('-----------------ccccc-----------------')
+                    # print('-----------------ccccc-----------------')
 
                 # Print time (inference + NMS)
-                print('%sDone. (%.3fs)' % (s, t2 - t1))
+                # print('%sDone. (%.3fs)' % (s, t2 - t1))
 
                 # Stream results
                 if view_img:
-                    print('开始取图')
+                    # print('开始取图')
                     cv2.imshow(p, im0) #显示检测后的视频流数据
                     if cv2.waitKey(1) == ord('q'):  # q to quit
                         raise StopIteration
@@ -607,7 +606,7 @@ if __name__ == '__main__':
             else:
                 detect()
     except Exception as e:
-        print('Error: ', e)
+        print('Error: ', str(e))
     finally:
         # client
         client_socket.close()  # 关闭资源
