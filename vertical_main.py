@@ -366,6 +366,134 @@ def measure_kuwei_type_2(image_dir, save_dir, file):
     return
 
 
+'''
+    KUWEI_TYPE_4型库位测量
+'''
+def measure_kuwei_type_4(image_dir, save_dir, file):
+    gap_height1, flag1 = -1, True
+    gap_height3, flag3 = -1, True
+    gap_height5, flag5 = -1, True
+    gap_height7, flag7 = -1, True
+    try:
+        gap_height1, flag1, fig1_point1, fig1_point2, fig1_pillar_point1, fig1_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '1.jpg')
+        # print("fig1_point1: " + str(fig1_point1))
+    except Exception as e:
+        # print("Fig1: " + repr(e))
+        flag1 = False
+    try:
+        gap_height3, flag3, fig3_point1, fig3_point2, fig3_pillar_point1, fig3_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '3.jpg')
+        # print("fig3_point1: " + str(fig3_point1))
+    except Exception as e:
+        # print("Fig3: " + repr(e))
+        flag3 = False
+    try:
+        gap_height5, flag5, fig5_point1, fig5_point2, fig5_pillar_point1, fig5_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '5.jpg')
+        # print("fig5_point1: " + str(fig5_point1))
+    except Exception as e:
+        # print("Fig5: " + repr(e))
+        flag5 = False
+    try:
+        gap_height7, flag7, fig7_point1, fig7_point2, fig7_pillar_point1, fig7_pillar_point2 = BoxMPR_LEDNet_main(image_dir, save_dir, '7.jpg')
+        # print("fig7_point1: " + str(fig7_point1))
+    except Exception as e:
+        # print("Fig7: " + repr(e))
+        flag7 = False
+
+    if flag1 and not flag3 and not flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙4:%.2f" % (gap_height1), file=file)
+        print("库位中只放置了右侧货物", file=file)
+        close_file_description(file)
+        return
+
+    if not flag1 and flag3 and not flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙3:%.2f" % (gap_height3), file=file)
+        print("库位中只放置了中间靠右侧的货物", file=file)
+        close_file_description(file)
+        return
+
+    if not flag1 and not flag3 and flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙2:%.2f" % (gap_height5), file=file)
+        print("库位中只放置了中间靠左侧货物", file=file)
+        close_file_description(file)
+        return
+    
+    if not flag1 and not flag3 and not flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f" % (gap_height7), file=file)
+        print("库位中只放置了左侧货物", file=file)
+        close_file_description(file)
+        return
+
+    if flag1 and flag3 and not flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙3:%.2f\n间隙4:%.2f" % (gap_height3, gap_height1), file=file)
+        print("库位中左侧无货物", file=file)
+        close_file_description(file)
+        return
+
+    if flag1 and not flag3 and flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙2:%.2f\n间隙4:%.2f" % (gap_height5, gap_height1), file=file)
+        print("库位中只放置了右侧和中间靠左侧货物", file=file)
+        close_file_description(file)
+        return
+    
+    if flag1 and not flag3 and not flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f\n间隙4:%.2f" % (gap_height7, gap_height1), file=file)
+        print("库位中只放置了两侧货物，中间无货物", file=file)
+        close_file_description(file)
+        return
+
+    if not flag1 and flag3 and flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙2:%.2f\n间隙3:%.2f" % (gap_height5, gap_height3), file=file)
+        print("库位中只放置了中间货物，两侧无货物", file=file)
+        close_file_description(file)
+        return
+    
+    if not flag1 and flag3 and not flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f\n间隙3:%.2f" % (gap_height7, gap_height3), file=file)
+        print("库位中只放置了左侧和中间靠右侧货物", file=file)
+        close_file_description(file)
+        return
+    
+    if not flag1 and not flag3 and flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f" % (gap_height7, gap_height5), file=file)
+        print("库位中右侧无货物", file=file)
+        close_file_description(file)
+        return
+    
+    if not flag1 and flag3 and flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f\n间隙3:%.2f" % (gap_height7, gap_height5, gap_height3), file=file)
+        print("库位中右侧无货物", file=file)
+        close_file_description(file)
+        return
+    
+    if flag1 and not flag3 and flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f\n间隙4:%.2f" % (gap_height7, gap_height5, gap_height1), file=file)
+        print("库位中中间靠右侧无货物", file=file)
+        close_file_description(file)
+        return
+    
+    if flag1 and flag3 and not flag5 and flag7:
+        print("纵向间隙尺寸\n间隙1:%.2f\n间隙3:%.2f\n间隙4:%.2f" % (gap_height7, gap_height3, gap_height1), file=file)
+        print("库位中中间靠左侧无货物", file=file)
+        close_file_description(file)
+        return
+    
+    if flag1 and flag3 and flag5 and not flag7:
+        print("纵向间隙尺寸\n间隙2:%.2f\n间隙3:%.2f\n间隙4:%.2f" % (gap_height5, gap_height3, gap_height1), file=file)
+        print("库位中左侧无货物", file=file)
+        close_file_description(file)
+        return
+
+    if not flag1 and not flag3 and not flag5 and not flag7:
+        print("库位中无货物，均处于安全距离", file=file)
+        close_file_description(file)
+        return
+
+    print("纵向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f\n间隙3:%.2f\n间隙4:%.2f" % (gap_height7, gap_height5, gap_height3, gap_height1), file=file)
+    close_file_description(file)
+
+    return
+
+
 def Serial_Images_Measurement(image_dir, save_dir, kuwei_type):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
@@ -375,6 +503,8 @@ def Serial_Images_Measurement(image_dir, save_dir, kuwei_type):
         measure_kuwei_type_3(image_dir, save_dir, file)
     elif kuwei_type == param.KUWEI_TYPE_2:
         measure_kuwei_type_2(image_dir, save_dir, file)
+    elif kuwei_type == param.KUWEI_TYPE_4:
+        measure_kuwei_type_4(image_dir, save_dir, file)
 
     return 
 

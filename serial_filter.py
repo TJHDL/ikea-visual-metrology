@@ -299,6 +299,70 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
                     image = serial_images[idx - 2]
                 key_frames.append(image)
                 state = 3
+    elif kuwei_type == param.KUWEI_TYPE_4:
+        #   state=0: 未找到Fig1 state=1: 已找到Fig1但未找到Fig2 state=2: 已找到Fig2但未找到Fig3
+        #   state=3: 已找到Fig3但未找到Fig4 state=4: 已找到Fig4但未找到Fig5 state=5: 已找到Fig5但未找到Fig6
+        #   state=6: 已找到Fig6但未找到Fig7 state=7: 已找到Fig7
+        state = 0
+        fig2_candidates = []
+        fig4_candidates = []
+        fig6_candidates = []
+
+        fig2_start_offset = param.KUWEI_TYPE_4_FIG2_OFFSET - param.KUWEI_TYPE_4_FIG2_LR_OFFSET
+        fig2_end_offset = param.KUWEI_TYPE_4_FIG2_OFFSET + param.KUWEI_TYPE_4_FIG2_LR_OFFSET
+        fig4_start_offset = center_offset - param.KUWEI_TYPE_4_FIG4_LR_OFFSET
+        fig4_end_offset = center_offset + param.KUWEI_TYPE_4_FIG4_LR_OFFSET
+        fig6_start_offset = len(serial_images) - param.KUWEI_TYPE_4_FIG6_OFFSET - param.KUWEI_TYPE_4_FIG6_LR_OFFSET
+        fig6_end_offset = len(serial_images) - param.KUWEI_TYPE_4_FIG6_OFFSET + param.KUWEI_TYPE_4_FIG6_LR_OFFSET
+
+        for idx, image in enumerate(serial_images):
+            if state == 0:
+                points = BoxMPR_inference(image)
+                if len(points) == 2 or idx >= 2:
+                    key_frames.append(image)
+                    state = 1
+            elif state == 1:
+                if fig2_start_offset <= idx and idx <= fig2_end_offset:
+                    fig2_candidates.append(image)
+                    continue
+                if idx > fig2_end_offset:
+                    key_frames.append(get_perfect_key_frame(fig2_candidates, fd))
+                    state = 2
+            elif state == 2:
+                if idx - fig2_end_offset >= 2:
+                    points = BoxMPR_inference(image)
+                    if len(points) == 2 or idx - fig2_end_offset >= 5:
+                        key_frames.append(image)
+                        state = 3
+            elif state == 3 and idx == center_offset:
+                if fig4_start_offset <= idx and idx <= fig4_end_offset:
+                    fig4_candidates.append(image)
+                    continue
+                if idx > fig4_end_offset:
+                    key_frames.append(get_perfect_key_frame(fig4_candidates, fd))
+                    state = 4
+            elif state == 4:
+                if idx - fig4_end_offset >= 2:
+                    points = BoxMPR_inference(image)
+                    if len(points) == 2 or idx - fig4_end_offset >= 5:
+                        key_frames.append(image)
+                        state = 5
+            elif state == 5:
+                if fig6_start_offset <= idx and idx <= fig6_end_offset:
+                    fig6_candidates.append(image)
+                    continue
+                if idx > fig6_end_offset:
+                    key_frames.append(get_perfect_key_frame(fig6_candidates, fd))
+                    state = 6
+            elif state == 6 and idx == len(serial_images) - 1:
+                if len(BoxMPR_inference(serial_images[idx])) == 2:
+                    image = serial_images[idx]
+                elif len(BoxMPR_inference(serial_images[idx - 1])) == 2:
+                    image = serial_images[idx - 1]
+                else:
+                    image = serial_images[idx - 2]
+                key_frames.append(image)
+                state = 7
 
     return key_frames
 
@@ -352,12 +416,7 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
 '''
     实现对单个库位的自动关键帧筛选(protocol)
 '''
-def single_kuwei_key_frame_filter_protocol(image_path, save_path, fd):
-    total_num = len(os.listdir(image_path))
-    kuwei_type = param.KUWEI_TYPE_3
-    if total_num <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD:
-        kuwei_type = param.KUWEI_TYPE_2
-
+def single_kuwei_key_frame_filter_protocol(image_path, save_path, fd, total_num, kuwei_type):
     start_num, end_num, serial_images = get_kuwei_range_protocol(image_path, total_num, kuwei_type)
 
     kuwei_str = "起始序号: " + str(start_num) + " 终止序号: " + str(end_num) + " 库位图片数量: " + str(len(serial_images))
@@ -382,11 +441,13 @@ def batch_kuwei_key_frame_filter_protocol(image_dir, save_dir):
     try:
         for kuwei_dir in kuwei_dirs:
             image_path = os.path.join(image_dir, kuwei_dir)
-            kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(image_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD else param.KUWEI_TYPE_3
+            total_num = len(os.listdir(image_path))
+            kuwei_type = param.KUWEI_TYPE_2 if total_num <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD['2-3'] else param.KUWEI_TYPE_3
+            kuwei_type = param.KUWEI_TYPE_4 if total_num >= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD['3-4'] else kuwei_type
             save_path = os.path.join(save_dir, kuwei_dir + "_" + str(kuwei_type))
             f.write("\nkuwei: " + kuwei_dir + "\n")
             f.flush()
-            _, end_num = single_kuwei_key_frame_filter_protocol(image_path, save_path, f)
+            _, end_num = single_kuwei_key_frame_filter_protocol(image_path, save_path, f, total_num, kuwei_type)
             if end_num == -1:
                 f.write("Occured error: kuwei split happen to problem!\n")
                 f.flush()

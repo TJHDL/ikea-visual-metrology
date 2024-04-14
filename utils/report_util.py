@@ -13,7 +13,8 @@ def get_kuwei_info_from_images(folder_path):
     image_names.sort()
 
     huojia, floor = folder_path.split('/')[-1].split('_')[0], folder_path.split('/')[-1].split('_')[1]
-    kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(folder_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD else param.KUWEI_TYPE_3
+    kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(folder_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD['2-3'] else param.KUWEI_TYPE_3
+    kuwei_type = param.KUWEI_TYPE_4 if len(os.listdir(folder_path)) >= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD['3-4'] else kuwei_type
 
     kuwei_list = []
     for image_name in image_names:
@@ -67,6 +68,9 @@ def get_txt_measurement_result(fd, kuwei_type, key_row_dict):
     elif kuwei_type == param.KUWEI_TYPE_2:
         horizontal_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY, "gap3":param.POSITIVE_INFINITY}
         vertical_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY}
+    elif kuwei_type == param.KUWEI_TYPE_4:
+        horizontal_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY, "gap3":param.POSITIVE_INFINITY, "gap4":param.POSITIVE_INFINITY, "gap5":param.POSITIVE_INFINITY}
+        vertical_size_dict = {"gap1":param.POSITIVE_INFINITY, "gap2":param.POSITIVE_INFINITY, "gap3":param.POSITIVE_INFINITY, "gap4":param.POSITIVE_INFINITY}
     else:
         print("[ERROR] Unknown kuwei type!!!")
         raise Exception("Kuwei type invalid!")
@@ -84,6 +88,8 @@ def get_txt_measurement_result(fd, kuwei_type, key_row_dict):
                 horizontal_size_dict["gap3"] = float(line.split(':')[-1])
             elif re.search("间隙4", line):
                 horizontal_size_dict["gap4"] = float(line.split(':')[-1])
+            elif re.search("间隙5", line):
+                horizontal_size_dict["gap5"] = float(line.split(':')[-1])
         elif key_row_dict['vertical_gap'] != -1 and idx > key_row_dict['vertical_gap']:
             if re.search("间隙1", line):
                 vertical_size_dict["gap1"] = float(line.split(':')[-1])
@@ -91,43 +97,47 @@ def get_txt_measurement_result(fd, kuwei_type, key_row_dict):
                 vertical_size_dict["gap2"] = float(line.split(':')[-1])
             elif re.search("间隙3", line):
                 vertical_size_dict["gap3"] = float(line.split(':')[-1])
+            elif re.search("间隙4", line):
+                vertical_size_dict["gap4"] = float(line.split(':')[-1])
     
     return horizontal_size_dict, vertical_size_dict
 
+
+def kuwei_safe_judge(kuwei_number, horizontal_size_dict, vertical_size_dict):
+    if kuwei_number == 1:
+        if horizontal_size_dict['gap1'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap1'] < param.VERTICAL_SAFE_THRESHOLD:
+            return False
+    elif kuwei_number == 2:
+        if horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap2'] < param.VERTICAL_SAFE_THRESHOLD:
+            return False
+    elif kuwei_number == 3:
+        if horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap4'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap3'] < param.VERTICAL_SAFE_THRESHOLD:
+            return False
+    elif kuwei_number == 4:
+        if horizontal_size_dict['gap4'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap5'] < param.HORIZONTAL_SAFE_THRESHOLD \
+            or vertical_size_dict['gap4'] < param.VERTICAL_SAFE_THRESHOLD:
+            return False
+    
+    return True
 
 def judge_safe_dict(horizontal_size_dict, vertical_size_dict, kuwei_type):
     safe_list = []
     
     if kuwei_type == param.KUWEI_TYPE_3:
-        if horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap4'] < param.HORIZONTAL_SAFE_THRESHOLD \
-            or vertical_size_dict['gap3'] < param.VERTICAL_SAFE_THRESHOLD:
-            safe_list.append(False)
-        else:
-            safe_list.append(True)
-
-        if horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD \
-            or vertical_size_dict['gap2'] < param.VERTICAL_SAFE_THRESHOLD:
-            safe_list.append(False)
-        else:
-            safe_list.append(True)
-
-        if horizontal_size_dict['gap1'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD \
-            or vertical_size_dict['gap1'] < param.VERTICAL_SAFE_THRESHOLD:
-            safe_list.append(False)
-        else:
-            safe_list.append(True)
+        safe_list.append(kuwei_safe_judge(3, horizontal_size_dict, vertical_size_dict))
+        safe_list.append(kuwei_safe_judge(2, horizontal_size_dict, vertical_size_dict))
+        safe_list.append(kuwei_safe_judge(1, horizontal_size_dict, vertical_size_dict))
     elif kuwei_type == param.KUWEI_TYPE_2:
-        if horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap3'] < param.HORIZONTAL_SAFE_THRESHOLD \
-            or vertical_size_dict['gap2'] < param.VERTICAL_SAFE_THRESHOLD:
-            safe_list.append(False)
-        else:
-            safe_list.append(True)
-
-        if horizontal_size_dict['gap1'] < param.HORIZONTAL_SAFE_THRESHOLD or horizontal_size_dict['gap2'] < param.HORIZONTAL_SAFE_THRESHOLD \
-            or vertical_size_dict['gap1'] < param.VERTICAL_SAFE_THRESHOLD:
-            safe_list.append(False)
-        else:
-            safe_list.append(True)
+        safe_list.append(kuwei_safe_judge(2, horizontal_size_dict, vertical_size_dict))
+        safe_list.append(kuwei_safe_judge(1, horizontal_size_dict, vertical_size_dict))
+    elif kuwei_type == param.KUWEI_TYPE_4:
+        safe_list.append(kuwei_safe_judge(4, horizontal_size_dict, vertical_size_dict))
+        safe_list.append(kuwei_safe_judge(3, horizontal_size_dict, vertical_size_dict))
+        safe_list.append(kuwei_safe_judge(2, horizontal_size_dict, vertical_size_dict))
+        safe_list.append(kuwei_safe_judge(1, horizontal_size_dict, vertical_size_dict))
     else:
         print("[ERROR] Unknown kuwei type!!!")
         raise Exception("Kuwei type invalid!")
