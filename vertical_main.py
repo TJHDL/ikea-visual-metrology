@@ -506,7 +506,20 @@ def Serial_Images_Measurement(image_dir, save_dir, kuwei_type):
     elif kuwei_type == param.KUWEI_TYPE_4:
         measure_kuwei_type_4(image_dir, save_dir, file)
 
-    return 
+    return
+
+
+def special_huojia_height_check(add_sub_flag):
+    prefix_signal = 1
+    if not add_sub_flag:
+        prefix_signal = -1
+    
+    if param.FLOOR_NUM <= 3:
+        param.UAV_HEIGHT[param.FLOOR_NUM] += prefix_signal * param.SPECIAL_HUOJIA_DELTA_HEIGHT
+    elif param.FLOOR_NUM == 4:
+        param.UAV_HEIGHT[param.FLOOR_NUM] += prefix_signal * 2 * param.SPECIAL_HUOJIA_DELTA_HEIGHT
+    elif param.FLOOR_NUM == 5:
+        param.UAV_HEIGHT[param.FLOOR_NUM] += prefix_signal * 3 * param.SPECIAL_HUOJIA_DELTA_HEIGHT
 
 
 '''
@@ -547,12 +560,7 @@ def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
         param.FLOOR_NUM = int(dir.split('_')[1])
 
         if huojia in param.SPECIAL_HUOJIA:
-            if param.FLOOR_NUM <= 3:
-                param.UAV_HEIGHT[param.FLOOR_NUM] += 20
-            elif param.FLOOR_NUM == 4:
-                param.UAV_HEIGHT[param.FLOOR_NUM] += 40
-            elif param.FLOOR_NUM == 5:
-                param.UAV_HEIGHT[param.FLOOR_NUM] += 60
+            special_huojia_height_check(True)
                 
         param.H_CAMERA = param.FLOOR_NUM * param.FLOOR_HEIGHT \
             - (param.CAR_HEIGHT + param.UAV_HEIGHT[param.FLOOR_NUM]) - param.TIEPIAN_WIDTH
@@ -563,6 +571,9 @@ def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
             f.write(dir + " vertical measurement fail! Please check this kuwei.")
             print("Exception info: " + repr(e), file=f)
             close_file_description(f)
+        finally:
+            if huojia in param.SPECIAL_HUOJIA:
+                special_huojia_height_check(False)
 
     print("[INFO] Measurement task complete!")
     print("[WORK FLOW] Measuring vertical size complete.")

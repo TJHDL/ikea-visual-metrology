@@ -26,6 +26,7 @@ CAR_HEIGHT = 87 #cm
 
 # 特殊高度货架号
 SPECIAL_HUOJIA = [106, 107, 108, 109, 601, 602, 603, 101, 110, 111, 114, 117]
+SPECIAL_HUOJIA_DELTA_HEIGHT = 20    #cm
 
 '''
     |   无人机高度对照表   |

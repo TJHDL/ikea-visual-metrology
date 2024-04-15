@@ -51,9 +51,11 @@ def workflow_main():
     clear_folder(data_dst_dir)
     
     if not use_protocol:
+        print("[INFO] Not use protocol test.")
         if args.kuwei_type == param.KUWEI_TYPE_3:
             measurement_main(img_dir, data_src_dir, data_dst_dir)
     elif use_protocol:
+        print("[INFO] Use protocol test.")
         measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file)
 
 
