@@ -699,6 +699,13 @@ def measure_kuwei_type_4(image_dir, save_dir, file):
     left_pillar_box_gap_pixel_width = points5[0][0] - left_pillar_right_x
     right_pillar_box_gap_pixel_width = right_pillar_left_x - points1[1][0]
 
+    points_left_center, img_left_center, flag_left_center = points_extractor(image_dir, '5.jpg', 2)
+    points_right_center, img_right_center, flag_right_center = points_extractor(image_dir, '3.jpg', 2)
+    left_center_box_pixel_width, right_center_box_pixel_width = 0, 0
+    if flag_left_center and flag_right_center:
+        left_center_box_pixel_width = points_left_center[1][0] - points_left_center[0][0]
+        right_center_box_pixel_width = points_right_center[1][0] - points_right_center[0][0]
+
     left_box_gap_pixel_width = robust_points_gap_location(points4, img4)
     center_box_gap_pixel_width = robust_points_gap_location(points3, img3)
     right_box_gap_pixel_width = robust_points_gap_location(points2, img2)
@@ -711,10 +718,29 @@ def measure_kuwei_type_4(image_dir, save_dir, file):
     left_box_gap_width = left_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
     center_box_gap_width = center_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
     right_box_gap_width = right_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+    left_center_box_width = left_center_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+    right_center_box_width = right_center_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+
+    if flag_left_center and flag_right_center:
+        scale_factor = (2 * param.PILLAR_WIDTH + left_center_box_width + right_center_box_width + left_box_width + right_box_width\
+                        + left_pillar_box_gap_width + right_pillar_box_gap_width + left_box_gap_width + right_box_gap_width\
+                            + center_box_gap_width)\
+                            / param.KUWEI_WIDTH[param.KUWEI_TYPE_4]
+        # print("scale_factor: ", scale_factor)
+
+        left_center_box_width /= scale_factor
+        right_center_box_width /= scale_factor
+        left_box_width /= scale_factor
+        right_box_width /= scale_factor
+        left_pillar_box_gap_width /= scale_factor
+        right_pillar_box_gap_width /= scale_factor
+        left_box_gap_width /= scale_factor
+        right_box_gap_width /= scale_factor
+        center_box_gap_width /= scale_factor
 
     print("横向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f\n间隙3:%.2f\n间隙4:%.2f\n间隙5:%.2f" % (left_pillar_box_gap_width + param.LEFT_OFFSET, left_box_gap_width + param.LEFT_CENTER_OFFSET,\
                                                             center_box_gap_width, right_box_gap_width + param.RIGHT_CENTER_OFFSET, right_pillar_box_gap_width + param.RIGHT_OFFSET), file=file)
-    print("横向货物尺寸\n货物1:%.2f\n货物4:%.2f" % (left_box_width, right_box_width), file=file)
+    print("横向货物尺寸\n货物1:%.2f\n货物2:%.2f\n货物3:%.2f\n货物4:%.2f" % (left_box_width, left_center_box_width, right_center_box_width, right_box_width), file=file)
     close_file_description(file)
 
     return
