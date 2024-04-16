@@ -12,8 +12,8 @@ from utils.marking_points_util import BoxMPR_inference
 from utils import save_key_frames, get_head_tail_sorted_number, get_file_description, close_file_description
 import parameters as param
 
-image_dir = r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4'
-save_dir = r'C:\Users\95725\Desktop\src'
+image_dir = r'C:\Users\95725\Desktop\test_kuwei'
+save_dir = r'C:\Users\95725\Desktop\test_src'
 result_path = r'C:\Users\95725\Desktop\semantic_result'
 
 image_num = 540
@@ -118,11 +118,11 @@ def get_kuwei_range(image_dir, serial_num, total_num, kuwei_type):
         pillar_x = detect_pillar_position(raw_image, serial_num, width, height)
         x_ratio = pillar_x / width
         pre_x_ratio = pre_pillar_x / width
-        # print("pillar x pos: ", x_ratio)
 
         # 避免库位划分时语义信息误识别导致的突变
         if kuwei_type == param.KUWEI_TYPE_3:
             gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
+            pre_pillar_x = pillar_x
             if cnt > 1 and gap_x_ratio >= 0.1:
                 serial_num += 1
                 continue
@@ -168,7 +168,8 @@ def get_kuwei_range_protocol(image_path, total_num, kuwei_type):
     pillar_x = 0
     pre_pillar_x = 0
 
-    image_names = os.listdir(image_path).sort()
+    image_names = os.listdir(image_path)
+    image_names.sort()
 
     for image_name in image_names:
         cnt += 1
@@ -189,9 +190,11 @@ def get_kuwei_range_protocol(image_path, total_num, kuwei_type):
         pre_x_ratio = pre_pillar_x / width
 
         # 避免库位划分时语义信息误识别导致的突变
-        gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
-        if cnt > 1 and gap_x_ratio >= 0.1:
-            continue
+        if kuwei_type == param.KUWEI_TYPE_3 or kuwei_type == param.KUWEI_TYPE_4:
+            gap_x_ratio = min(abs(x_ratio - pre_x_ratio), min(x_ratio, pre_x_ratio) + 1 - max(x_ratio, pre_x_ratio))
+            pre_pillar_x = pillar_x
+            if cnt > 1 and gap_x_ratio >= param.GAP_RATIO_DECISION_THRESHOLD:
+                continue
 
         if state == 0 and (param.START_POS_RANGE_LEFT <= x_ratio and x_ratio <= param.START_POS_RANGE_RIGHT):
             start_num = cnt
@@ -419,6 +422,9 @@ def batch_kuwei_key_frame_filter(image_dir, save_dir):
 def single_kuwei_key_frame_filter_protocol(image_path, save_path, fd, total_num, kuwei_type):
     start_num, end_num, serial_images = get_kuwei_range_protocol(image_path, total_num, kuwei_type)
 
+    if serial_images is None:
+        return start_num, end_num
+    
     kuwei_str = "起始序号: " + str(start_num) + " 终止序号: " + str(end_num) + " 库位图片数量: " + str(len(serial_images))
     print("[INFO] " + kuwei_str)
     fd.write(kuwei_str + "\n")
@@ -464,5 +470,5 @@ def batch_kuwei_key_frame_filter_protocol(image_dir, save_dir):
 if __name__ == '__main__':
     # f = get_file_description(save_dir, 'test_log.txt')
     # single_kuwei_key_frame_filter(image_num, save_dir, total_num, f)
-    batch_kuwei_key_frame_filter(image_dir, save_dir)
-    # batch_kuwei_key_frame_filter_protocol(image_dir, save_dir)
+    # batch_kuwei_key_frame_filter(image_dir, save_dir)
+    batch_kuwei_key_frame_filter_protocol(image_dir, save_dir)

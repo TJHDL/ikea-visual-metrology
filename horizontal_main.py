@@ -62,7 +62,7 @@ def points_extractor(image_dir, img_name, point_num):
                 center_point_cnt = 0
                 img_width = img.shape[1]
                 for point in points:
-                    if point[0] / img_width >= 0.35 and point[0] / img_width <= 0.65:
+                    if point[0] / img_width >= param.CENTER_POINT_LEFT_THRESHOLD and point[0] / img_width <= param.CENTER_POINT_RIGHT_THRESHOLD:
                         center_point_cnt += 1
             if center_point_cnt == 2:
                 return points, img, True
@@ -268,6 +268,54 @@ def measure_kuwei_type_3(image_dir, save_dir, file):
 
         print("横向间隙尺寸\n间隙3:%.2f\n间隙4:%.2f" % (right_box_gap_width + param.RIGHT_CENTER_OFFSET, right_pillar_box_gap_width + param.RIGHT_OFFSET), file=file)
         print("横向货物尺寸\n货物2:%.2f\n货物3:%.2f" % (center_box_width, right_box_width), file=file)
+        print("库位中左侧位置的货物不存在，其他位置存在货物，库位左侧处于安全距离。", file=file)
+        close_file_description(file)
+        return
+    
+    if flag5 and flag4 and flag3 and not flag2 and flag1:
+        left_pillar_pixel_width = left_pillar_right_x - left_pillar_left_x
+        right_pillar_pixel_width = right_pillar_right_x - right_pillar_left_x
+        left_box_pixel_width = points5[1][0] - points5[0][0]
+        right_box_pixel_width = points1[1][0] - points1[0][0]
+        left_pillar_box_gap_pixel_width = points5[0][0] - left_pillar_right_x
+        right_pillar_box_gap_pixel_width = right_pillar_left_x - points1[1][0]
+        left_box_gap_pixel_width = robust_points_gap_location(points4, img4)
+        center_box_pixel_width = points3[1][0] - points3[0][0]
+
+        pillar_pixel_width = (left_pillar_pixel_width + right_pillar_pixel_width) / 2
+        center_box_width = center_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        right_box_width = right_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        left_box_width = left_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        right_pillar_box_gap_width = right_pillar_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        left_pillar_box_gap_width = left_pillar_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        left_box_gap_width = left_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+
+        print("横向间隙尺寸\n间隙1:%.2f\n间隙2:%.2f\n间隙4:%.2f" % (left_pillar_box_gap_width + param.LEFT_OFFSET, left_box_gap_width + param.LEFT_CENTER_OFFSET, right_pillar_box_gap_width + param.RIGHT_OFFSET), file=file)
+        print("横向货物尺寸\n货物1:%.2f\n货物2:%.2f\n货物3:%.2f" % (left_box_width, center_box_width, right_box_width), file=file)
+        print("库位中左侧位置的货物不存在，其他位置存在货物，库位左侧处于安全距离。", file=file)
+        close_file_description(file)
+        return
+    
+    if flag5 and not flag4 and flag3 and flag2 and flag1:
+        left_pillar_pixel_width = left_pillar_right_x - left_pillar_left_x
+        right_pillar_pixel_width = right_pillar_right_x - right_pillar_left_x
+        left_box_pixel_width = points5[1][0] - points5[0][0]
+        right_box_pixel_width = points1[1][0] - points1[0][0]
+        left_pillar_box_gap_pixel_width = points5[0][0] - left_pillar_right_x
+        right_pillar_box_gap_pixel_width = right_pillar_left_x - points1[1][0]
+        right_box_gap_pixel_width = robust_points_gap_location(points2, img2)
+        center_box_pixel_width = points3[1][0] - points3[0][0]
+
+        pillar_pixel_width = (left_pillar_pixel_width + right_pillar_pixel_width) / 2
+        center_box_width = center_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        right_box_width = right_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        left_box_width = left_box_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        right_pillar_box_gap_width = right_pillar_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        left_pillar_box_gap_width = left_pillar_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+        right_box_gap_width = right_box_gap_pixel_width / pillar_pixel_width * param.PILLAR_WIDTH
+
+        print("横向间隙尺寸\n间隙1:%.2f\n间隙3:%.2f\n间隙4:%.2f" % (left_pillar_box_gap_width + param.LEFT_OFFSET, right_box_gap_width + param.RIGHT_CENTER_OFFSET, right_pillar_box_gap_width + param.RIGHT_OFFSET), file=file)
+        print("横向货物尺寸\n货物1:%.2f\n货物2:%.2f\n货物3:%.2f" % (left_box_width, center_box_width, right_box_width), file=file)
         print("库位中左侧位置的货物不存在，其他位置存在货物，库位左侧处于安全距离。", file=file)
         close_file_description(file)
         return
@@ -797,7 +845,7 @@ def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
         if dir.endswith('.txt'):
             continue
         print("[INFO] Measuring " + dir + " horizontal size......")
-        kuwei_type = str(dir.split('_')[-1])
+        kuwei_type = int(dir.split('_')[-1])
         try:
             Serial_Images_Measurement(os.path.join(data_src_dir, dir), os.path.join(data_dst_dir, dir), kuwei_type)
         except Exception as e:

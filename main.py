@@ -17,7 +17,7 @@ def measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file):
     horizontal_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
     vertical_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
     print("[WORK FLOW] Generate measurement excel report.")
-    measurement_kuwei_projection(data_src_dir, data_dst_dir, xls_file)
+    measurement_kuwei_projection(img_dir, data_dst_dir, xls_file)
     print("[WORK FLOW] Report generated successfully.")
     print("[END INFO] Measurement result in the directory: ", data_dst_dir)
     print("[END INFO] Measurement result report in the directory: ", xls_file)
@@ -59,13 +59,5 @@ def workflow_main():
         measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file)
 
 
-def report_generation_test():
-    xls_file = r'report\407-03-00-60_20231129.xls'
-    workbook, sheet, new_book = get_xls_workbook_sheet(xls_file)
-    valid_rows = count_xls_valid_rows(sheet)
-    edit_report(xls_file, sheet, new_book, huojia="403", floor="3", kuwei="6", safe=True, valid_rows=valid_rows)
-
-
 if __name__ == '__main__':
     workflow_main()
-    # report_generation_test()

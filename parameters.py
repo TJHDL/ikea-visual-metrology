@@ -52,13 +52,15 @@ H_CAMERA = FLOOR_NUM * FLOOR_HEIGHT - (CAR_HEIGHT + UAV_HEIGHT[FLOOR_NUM]) - TIE
 KUWEI_TYPE_2 = 2
 KUWEI_TYPE_3 = 3
 KUWEI_TYPE_4 = 4
-KUWEI_TYPE_THRESHOLD_CHOICES = {2:25, 3:40, 4:55}
+KUWEI_TYPE_THRESHOLD_CHOICES = {2:20, 3:40, 4:55}
 MAX_KUWEI_IMAGES_COUNT = 160
 
 START_POS_RANGE_LEFT = 0.686    # 12 / 17
 START_POS_RANGE_RIGHT = 0.785   # 13 / 17
 END_POS_RANGE_LEFT = 0.215  # 4 / 17
 END_POS_RANGE_RIGHT = 0.314  # 5 / 17
+
+GAP_RATIO_DECISION_THRESHOLD = 0.2
 
 KUWEI_TYPE_3_FIG2_MAX_OFFSET = 16
 KUWEI_TYPE_3_FIG2_MIN_OFFSET = 6
@@ -76,7 +78,7 @@ KUWEI_TYPE_4_FIG6_LR_OFFSET = 5
 CENTER_POINT_LEFT_THRESHOLD = 0.35
 CENTER_POINT_RIGHT_THRESHOLD = 0.65
 
-KUWEI_TYPE_IMAGES_NUM_THRESHOLD = {'2-3':50, '3-4':95}
+KUWEI_TYPE_IMAGES_NUM_THRESHOLD = {'2-3':55, '3-4':95}
 
 # 正无穷大
 POSITIVE_INFINITY = float('inf')
@@ -96,7 +98,7 @@ def get_parser_for_measurement():
                         help="Measurement results storage directory")
     parser.add_argument('--floor', type=int,
                         help="Floor number of captured images.")
-    parser.add_argument('--kuwei_type', type=int, choices=[3, 2], default=3,
+    parser.add_argument('--kuwei_type', type=int, choices=[4, 3, 2], default=3,
                         help="Measured kuwei type.")
     parser.add_argument('--use_protocol', type=bool, default=False,
                         help="Whether use protocol to save images or not.")

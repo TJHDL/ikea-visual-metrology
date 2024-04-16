@@ -39,9 +39,9 @@ def get_head_tail_sorted_number(image_dir):
 '''
 def get_file_description(save_dir, txt_name):
     if not os.path.exists(os.path.join(save_dir, txt_name)):
-        with open(os.path.join(save_dir, txt_name), "w") as file:
+        with open(os.path.join(save_dir, txt_name), "w+", encoding="utf-8") as file:
             file.write("Measurement Result\n")
-    file = open(os.path.join(save_dir, txt_name), "a", encoding="utf-8")
+    file = open(os.path.join(save_dir, txt_name), "a+", encoding="utf-8")
 
     return file
 

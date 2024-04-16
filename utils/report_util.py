@@ -12,7 +12,7 @@ def get_kuwei_info_from_images(folder_path):
     image_names = os.listdir(folder_path)
     image_names.sort()
 
-    huojia, floor = folder_path.split('/')[-1].split('_')[0], folder_path.split('/')[-1].split('_')[1]
+    huojia, floor = folder_path.split('\\')[-1].split('_')[0], folder_path.split('/')[-1].split('_')[1]
     kuwei_type = param.KUWEI_TYPE_2 if len(os.listdir(folder_path)) <= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD['2-3'] else param.KUWEI_TYPE_3
     kuwei_type = param.KUWEI_TYPE_4 if len(os.listdir(folder_path)) >= param.KUWEI_TYPE_IMAGES_NUM_THRESHOLD['3-4'] else kuwei_type
 
@@ -147,10 +147,15 @@ def judge_safe_dict(horizontal_size_dict, vertical_size_dict, kuwei_type):
 
 def edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_rows):
     for idx in range(1, valid_rows, 1):
-        if sheet.cell_value(idx, 0) == huojia and sheet.cell_value(idx, 1) == kuwei and sheet.cell_value(idx, 2) == floor:
+        if str(sheet.cell_value(idx, 0)) == huojia and str(sheet.cell_value(idx, 1)) == kuwei and str(sheet.cell_value(idx, 2)) == floor:
             current_timestamp = time.time()
             formatted_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(current_timestamp))
             new_book.get_sheet(0).write(idx, 9, formatted_time)  # 将修改时间输入到表格
+            
+            if safe is None:
+                new_book.get_sheet(0).write(idx, 10, "测量失败")
+                continue
+
             if safe:
                 new_book.get_sheet(0).write(idx, 10, "正常")
             elif not safe:
@@ -158,15 +163,19 @@ def edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_row
     new_book.save(xls_file)
 
 
-def measurement_kuwei_projection(data_src_dir, data_dst_dir, xls_file):
+def measurement_kuwei_projection(img_dir, data_dst_dir, xls_file):
     workbook, sheet, new_book = get_xls_workbook_sheet(xls_file)
     valid_rows = count_xls_valid_rows(sheet)
 
-    src_dirs = os.listdir(data_src_dir)
+    src_dirs = os.listdir(img_dir)
     for src_dir in src_dirs:
-        huojia, floor, kuwei_list, kuwei_type = get_kuwei_info_from_images(os.path.join(data_src_dir, src_dir))
-        dst_dir = src_dir + '_' + str(kuwei_type)
-        fd = get_file_description(os.path.join(data_dst_dir, dst_dir), "measurement.txt")
+        huojia, floor, kuwei_list, kuwei_type = get_kuwei_info_from_images(os.path.join(img_dir, src_dir))
+        if not os.path.exists(os.path.join(data_dst_dir, src_dir + '_' + str(kuwei_type))):
+            for idx, kuwei in enumerate(kuwei_list):
+                edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, None, valid_rows)
+            print("[WARNING] Measurement result is empty: ", os.path.join(data_dst_dir, src_dir + '_' + str(kuwei_type)))
+            continue
+        fd = get_file_description(os.path.join(data_dst_dir, src_dir + '_' + str(kuwei_type)), "measurement.txt")
         key_row_dict = get_txt_key_row_number(fd)
         horizontal_size_dict, vertical_size_dict = get_txt_measurement_result(fd, kuwei_type, key_row_dict)
         safe_list = judge_safe_dict(horizontal_size_dict, vertical_size_dict, kuwei_type)
