@@ -18,8 +18,8 @@ import matplotlib.image as mpimg
 LEDNet_detector_weights = r'D:\ProjectCodes\VisionMeasurement\GapHeightMeasurement\checkpoints\LEDNet_iter_170400_v100.pth'    #r'checkpoints\LEDNet_iter_170400_v100.pth'
 
 image_dir = r'D:\ProjectCodes\VisionMeasurement\test'
-image_name = r'IMG_3543.jpg'
-result_path = r'C:\Users\95725\Desktop\semantic_result'
+img_name = r'IMG_3543.jpg'
+result_path = r'C:\Users\95725\Desktop\test_dji_lednet'
 save_dir = r'D:\ProjectCodes\VisionMeasurement\result'
 
 LEDNET_DEVICE = None
@@ -204,9 +204,10 @@ def LEDNet_inference(image):
     # print(type(predict))
 
     # 保存并可视化推理结果
+    global img_name
     mask = ptutil.get_color_pallete(predict, 'ikea')
-    # mask.save(os.path.join(result_path, image_name.replace('jpg', 'png')))
-    # mmask = mpimg.imread(os.path.join(result_path, image_name.replace('jpg', 'png')))
+    # mask.save(os.path.join(result_path, img_name.replace('JPG', 'png')))
+    # mmask = mpimg.imread(os.path.join(result_path, img_name.replace('jpg', 'png')))
 
     # 取消注释可视化语义
     # plt.imshow(mask)
@@ -369,9 +370,20 @@ def gap_height_measurement_based_on_camera_height(mask, width, height, h_camera,
     return gap_width
 
 
+def LEDNet_test(image_dir, save_dir):
+    global img_name
+    image_names = os.listdir(image_dir)
+    for image_name in image_names:
+        img_name = image_name
+        image = cv2.imread(os.path.join(image_dir, image_name))
+        image = cv2.resize(image, (1088, 720))
+        RGB_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        predict, mask = LEDNet_inference(RGB_image)
+
+
 if __name__ == '__main__':
     # image = Image.open(os.path.join(image_dir, image_name))
-    image = cv2.imread(os.path.join(image_dir, image_name))
+    image = cv2.imread(os.path.join(image_dir, img_name))
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     image = cv2.resize(image, (512, 512))
 
@@ -403,8 +415,8 @@ if __name__ == '__main__':
     gap_height = gap_height_measurement_mask(ROI, w, h, red_width)
     print(gap_height)
 
-    # cv2.imwrite(os.path.join(save_dir, "lednet" + image_name), image)
-    cv2.namedWindow(image_name, 0)
-    cv2.resizeWindow(image_name, 512, 512)
-    cv2.imshow(image_name, image)
+    # cv2.imwrite(os.path.join(save_dir, "lednet" + img_name), image)
+    cv2.namedWindow(img_name, 0)
+    cv2.resizeWindow(img_name, 512, 512)
+    cv2.imshow(img_name, image)
     cv2.waitKey(0)

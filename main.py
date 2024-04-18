@@ -4,6 +4,8 @@ from serial_filter import batch_kuwei_key_frame_filter, batch_kuwei_key_frame_fi
 import parameters as param
 from utils.file_util import clear_folder
 from utils.report_util import measurement_kuwei_projection, get_xls_workbook_sheet, count_xls_valid_rows, edit_report
+from utils.marking_points_util import marking_points_test
+from utils.semantic_info_util import LEDNet_test
 
 def measurement_main(img_dir, data_src_dir, data_dst_dir):
     batch_kuwei_key_frame_filter(img_dir, data_src_dir)
@@ -59,5 +61,15 @@ def workflow_main():
         measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file)
 
 
+def marking_points_test_main():
+    marking_points_test(r'C:\Users\95725\Desktop\DJI_202404171858_002', r'C:\Users\95725\Desktop\test_dji_points')
+
+
+def LEDNet_test_main():
+    LEDNet_test(r'C:\Users\95725\Desktop\DJI_202404171858_002', r'C:\Users\95725\Desktop\test_dji_lednet')
+
+
 if __name__ == '__main__':
     workflow_main()
+    # marking_points_test_main()
+    # LEDNet_test_main()

@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import cv2
 import torch
@@ -158,3 +159,15 @@ def pass_through_third_point(marking_points, i, j):
         if np.dot(vec1, vec2) > config.SLOT_SUPPRESSION_DOT_PRODUCT_THRESH:
             return True
     return False
+
+
+def marking_points_test(image_dir, save_dir):
+    image_names = os.listdir(image_dir)
+    for image_name in image_names:
+        image = cv2.imread(os.path.join(image_dir, image_name))
+        image = cv2.resize(image, (1088, 720))
+        points = BoxMPR_inference(image)
+
+        for point in points:
+            cv2.circle(image, (point[0], point[1]), 5, (0, 255, 0), 3)
+        cv2.imwrite(os.path.join(save_dir, image_name), image)

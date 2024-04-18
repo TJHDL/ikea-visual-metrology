@@ -15,7 +15,7 @@ def save_key_frames(key_frames, save_dir):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
     for idx, image in enumerate(key_frames):
-        cv2.imwrite(os.path.join(save_dir, str(idx + 1) + '.jpg'), image)
+        cv2.imwrite(os.path.join(save_dir, str(idx + 1) + '.jpg'), image, [int(cv2.IMWRITE_JPEG_QUALITY), 100])
 
 
 '''
@@ -45,6 +45,13 @@ def get_file_description(save_dir, txt_name):
 
     return file
 
+
+'''
+    获取一个只读的文件描述符
+'''
+def get_only_read_description(save_dir, txt_name):
+    file = open(os.path.join(save_dir, txt_name), "r", encoding="utf-8")
+    return file
 
 '''
     关闭文件描述符

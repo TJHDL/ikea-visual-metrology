@@ -12,8 +12,8 @@ from utils.marking_points_util import BoxMPR_inference, points_filter
 
 image_dir = r'C:\Users\95725\Desktop\src\kuwei6'
 save_dir = r'C:\Users\95725\Desktop\dst\kuwei6'
-data_src_dir = r'C:\Users\95725\Desktop\src'
-data_dst_dir = r'C:\Users\95725\Desktop\dst'
+data_src_dir = r'C:\Users\95725\Desktop\test_src'
+data_dst_dir = r'C:\Users\95725\Desktop\test_dst'
 
 
 '''
@@ -22,14 +22,14 @@ data_dst_dir = r'C:\Users\95725\Desktop\dst'
 def points_extractor(image_dir, img_name, point_num):
     img = cv2.imread(os.path.join(image_dir, img_name))
     points = BoxMPR_inference(img)
+    # for point in points:
+    #     cv2.circle(img, (point[0], point[1]), 5, (0, 255, 0), 3)
+    
     if (point_num == 2 and len(points) < 2) or (point_num == 4 and len(points) < 3):
         # print("length of points: ", len(points))
         # print("此处无货物")
         return points, img, False
     points.sort(key=lambda x: x[0], reverse=False)
-
-    # for point in points:
-    #     cv2.circle(img, (point[0], point[1]), 5, (0, 255, 0), 3)
 
     if point_num == 2:
         point_pairs = points_filter(points, img)
@@ -860,5 +860,5 @@ def batch_serial_measurement_protocol(data_src_dir, data_dst_dir):
 
 if __name__ == '__main__':
     # Serial_Images_Measurement(image_dir, save_dir)
-    batch_serial_measurement(data_src_dir, data_dst_dir)
-    # batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
+    # batch_serial_measurement(data_src_dir, data_dst_dir)
+    batch_serial_measurement_protocol(data_src_dir, data_dst_dir)

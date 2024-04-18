@@ -36,7 +36,6 @@ def get_perfect_key_frame(fig_candidates, fd):
 
     key_idx = x_arr[int(len(x_arr) / 2)]
 
-    # print("检测到的最大角点数: ", max_num)
     fd.write("检测到的最大角点数: " + str(max_num) + "\n")
     fd.write("包含以下帧id: \n")
     for idx in x_arr:
@@ -102,7 +101,6 @@ def get_kuwei_range(image_dir, serial_num, total_num, kuwei_type):
 
     while True:
         cnt += 1
-        # print("Detecting " + str(serial_num) + ".jpg.....")
         try:
             raw_image = cv2.imread(os.path.join(image_dir, str(serial_num) + ".jpg"))
         except Exception as e:
@@ -243,7 +241,7 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
         for idx, image in enumerate(serial_images):
             if state == 0:
                 points = BoxMPR_inference(image)
-                if len(points) == 2 or idx >= 2:
+                if len(points) == 2 or idx >= 4:
                     key_frames.append(image)
                     state = 1
             elif state == 1:
@@ -268,8 +266,12 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
                     image = serial_images[idx]
                 elif len(BoxMPR_inference(serial_images[idx - 1])) == 2:
                     image = serial_images[idx - 1]
-                else:
+                elif len(BoxMPR_inference(serial_images[idx - 2])) == 2:
                     image = serial_images[idx - 2]
+                elif len(BoxMPR_inference(serial_images[idx - 3])) == 2:
+                    image = serial_images[idx - 3]
+                else:
+                    image = serial_images[idx - 4]
                 key_frames.append(image)
                 state = 5
     elif kuwei_type == param.KUWEI_TYPE_2:
@@ -283,7 +285,7 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
         for idx, image in enumerate(serial_images):
             if state == 0:
                 points = BoxMPR_inference(image)
-                if len(points) == 2 or idx >= 2:
+                if len(points) == 2 or idx >= 4:
                     key_frames.append(image)
                     state = 1
             elif state == 1:
@@ -298,8 +300,12 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
                     image = serial_images[idx]
                 elif len(BoxMPR_inference(serial_images[idx - 1])) == 2:
                     image = serial_images[idx - 1]
-                else:
+                elif len(BoxMPR_inference(serial_images[idx - 2])) == 2:
                     image = serial_images[idx - 2]
+                elif len(BoxMPR_inference(serial_images[idx - 3])) == 2:
+                    image = serial_images[idx - 3]
+                else:
+                    image = serial_images[idx - 4]
                 key_frames.append(image)
                 state = 3
     elif kuwei_type == param.KUWEI_TYPE_4:
@@ -321,7 +327,7 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
         for idx, image in enumerate(serial_images):
             if state == 0:
                 points = BoxMPR_inference(image)
-                if len(points) == 2 or idx >= 2:
+                if len(points) == 2 or idx >= 4:
                     key_frames.append(image)
                     state = 1
             elif state == 1:
@@ -362,8 +368,12 @@ def key_frame_extractor(serial_images, center_offset, fd, kuwei_type):
                     image = serial_images[idx]
                 elif len(BoxMPR_inference(serial_images[idx - 1])) == 2:
                     image = serial_images[idx - 1]
-                else:
+                elif len(BoxMPR_inference(serial_images[idx - 2])) == 2:
                     image = serial_images[idx - 2]
+                elif len(BoxMPR_inference(serial_images[idx - 3])) == 2:
+                    image = serial_images[idx - 3]
+                else:
+                    image = serial_images[idx - 4]
                 key_frames.append(image)
                 state = 7
 
