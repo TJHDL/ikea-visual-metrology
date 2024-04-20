@@ -19,7 +19,7 @@ LEDNet_detector_weights = r'D:\ProjectCodes\VisionMeasurement\GapHeightMeasureme
 
 image_dir = r'D:\ProjectCodes\VisionMeasurement\test'
 img_name = r'IMG_3543.jpg'
-result_path = r'C:\Users\95725\Desktop\test_dji_lednet'
+result_path = r'C:\Users\95725\Desktop\407_5_20240417\test_1_lednet'
 save_dir = r'D:\ProjectCodes\VisionMeasurement\result'
 
 LEDNET_DEVICE = None
@@ -204,9 +204,12 @@ def LEDNet_inference(image):
     # print(type(predict))
 
     # 保存并可视化推理结果
-    global img_name
+    global img_name, result_path
     mask = ptutil.get_color_pallete(predict, 'ikea')
-    # mask.save(os.path.join(result_path, img_name.replace('JPG', 'png')))
+    # if img_name.endswith('JPG'):
+    #     mask.save(os.path.join(result_path, img_name.replace('JPG', 'png')))
+    # elif img_name.endswith('jpg'):
+    #     mask.save(os.path.join(result_path, img_name.replace('jpg', 'png')))
     # mmask = mpimg.imread(os.path.join(result_path, img_name.replace('jpg', 'png')))
 
     # 取消注释可视化语义
@@ -371,7 +374,8 @@ def gap_height_measurement_based_on_camera_height(mask, width, height, h_camera,
 
 
 def LEDNet_test(image_dir, save_dir):
-    global img_name
+    global img_name, result_path
+    result_path = save_dir
     image_names = os.listdir(image_dir)
     for image_name in image_names:
         img_name = image_name
