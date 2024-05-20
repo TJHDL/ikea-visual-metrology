@@ -15,9 +15,9 @@ def measurement_main(img_dir, data_src_dir, data_dst_dir):
 
 
 def measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file):
-    # batch_kuwei_key_frame_filter_protocol(img_dir, data_src_dir)
-    # horizontal_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
-    # vertical_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
+    batch_kuwei_key_frame_filter_protocol(img_dir, data_src_dir)
+    horizontal_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
+    vertical_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
     print("[WORK FLOW] Generate measurement excel report.")
     measurement_kuwei_projection(img_dir, data_dst_dir, xls_file)
     print("[WORK FLOW] Report generated successfully.")
@@ -49,8 +49,8 @@ def workflow_main():
     print("[INPUT ARGUMENTS] xls_file: ", xls_file)
 
     print("[WORK FLOW] Clear previous result.")
-    # clear_folder(data_src_dir)
-    # clear_folder(data_dst_dir)
+    clear_folder(data_src_dir)
+    clear_folder(data_dst_dir)
     
     if not use_protocol:
         print("[INFO] Not use protocol test.")
@@ -62,11 +62,11 @@ def workflow_main():
 
 
 def marking_points_test_main():
-    marking_points_test(r'C:\Users\95725\Desktop\407_5_20240417\DJI_202404171957_003_3', r'C:\Users\95725\Desktop\407_5_20240417\test_3_points')
+    marking_points_test(r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3', r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3_points')
 
 
 def LEDNet_test_main():
-    LEDNet_test(r'C:\Users\95725\Desktop\407_5_20240417\DJI_202404171957_003_3', r'C:\Users\95725\Desktop\407_5_20240417\test_3_lednet')
+    LEDNet_test(r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3', r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3_semantic')
 
 
 if __name__ == '__main__':

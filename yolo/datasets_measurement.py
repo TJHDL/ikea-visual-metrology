@@ -283,7 +283,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
     def update(self, index, cap):
         n = 0
         output_dir = '/home/nvidia/YIJIA/picture/measurement_images/' #每四帧保存图片文件夹位置
-        timestamp = time.strftime("%Y-%m-%d--%H-%M-%S", time.localtime())
+        timestamp = time.strftime('%Y-%m-%d--%H-%M-%S', time.localtime())
         output_dir = os.path.join(output_dir, timestamp)
 
         if not os.path.exists(output_dir):

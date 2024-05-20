@@ -28,7 +28,7 @@ def receive_messages(client_socket):
         try:
             # 接收消息
             message = client_socket.recv(1024).decode('utf-8')
-            if message:
+            if message and (logger is not None):
                 print("Received: ", message)
                 logger.info(message)
                 infos = message.split('/')
@@ -38,8 +38,7 @@ def receive_messages(client_socket):
             print("Error receiving message:", str(e))
             break
 
-        # 控制接收消息的频率
-        time.sleep(1 / 20)  # 20Hz
+    print("Disconnect.")
 
 
 def setup_logger(name, log_file, level=logging.INFO):
@@ -255,7 +254,7 @@ def spot_detect_angles(img):
                         if isLine(points[i], points[j], points[k]) and isTarget(points[i], points[j], points[k]) and isSameSize(radius[i], radius[j], radius[k]) and isNotSamePoint(points[i], points[j], points[k]):
                             points_.extend([points[i], points[j], points[k]])
     else:
-        print("size: " + str(len(points)))
+        # print("size: " + str(len(points)))
         return 0, 0, 0, 0
 
     if len(points_) >= 3:
@@ -295,7 +294,7 @@ def spot_detect_angles(img):
             return 0, 0, 0, 0
 
     else:
-        print("points_num:", len(points_))
+        # print("points_num:", len(points_))
         return 0, 0, 0, 0
 
 ## spot angle detect    
@@ -519,19 +518,19 @@ def detect(save_img=False):  #检测标签
                             ratio2 = width2[count_x] / height2[count_x]
                             log_request(logger, time.time(), alpha_guangban, alpha_led, ratio2)
                             # sk.send(bytes('1/' + str(center_x_list[count_x]) + '/' + str(center_y_list[count_x]) + '/0/0\n', encoding='utf8')) #发送标签位置和偏航角给AGV
-                            sk.send(bytes('1/' + str(center_x_list[count_x]) + '/' + str(center_y_list[count_x]) + '/' + '0' + '/' + str(alpha_led) + '\n', encoding='utf8'))  # 发送标签位置和偏航角给AGV
+                            client_socket.send(bytes('1/' + str(center_x_list[count_x]) + '/' + str(center_y_list[count_x]) + '/' + '0' + '/' + str(alpha_led) + '\n', encoding='utf8'))  # 发送标签位置和偏航角给AGV
                             state=2
                     if state == 0:
                         # print('-----------------bbbbb-------------------')
                         log_request(logger, time.time(), 0, alpha_led, 0)
                         # sk.send(bytes('0/0/0/0/0\n', encoding='utf8')) #发送数据给AGV
-                        sk.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8'))  # 发送数据给AGV
+                        client_socket.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8'))  # 发送数据给AGV
                     time.sleep(0.05)
 
                 else:
                     log_request(logger, time.time(), 0, alpha_led, 0)
                     # sk.send(bytes('0/0/0/0/0\n', encoding='utf8'))
-                    sk.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8')) #发送数据给AGV
+                    client_socket.send(bytes('0/0/0/0/' + str(alpha_led) + '\n', encoding='utf8')) #发送数据给AGV
                     # print('-----------------ccccc-----------------')
 
                 # Print time (inference + NMS)
