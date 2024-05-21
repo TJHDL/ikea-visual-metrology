@@ -85,6 +85,12 @@ POSITIVE_INFINITY = float('inf')
 # 负无穷大
 NEGATIVE_INFINITY = float('-inf')
 
+MODEL_MODE = 'day'
+POINT_CHECKPOINT_CHOICE = {'day':r'checkpoints\dp_detector_799_v100.pth',
+                           'night':r'checkpoints\dp_detector_59_dark.pth'}
+SEMANTIC_CHECKPOINT_CHOICE = {'day':r'checkpoints\LEDNet_iter_013600_day.pth',
+                              'night':r'checkpoints\LEDNet_iter_170400_v100.pth'}
+
 HORIZONTAL_SAFE_THRESHOLD = 2   #cm
 VERTICAL_SAFE_THRESHOLD = 5     #cm
 
@@ -104,5 +110,7 @@ def get_parser_for_measurement():
                         help="Whether use protocol to save images or not.")
     parser.add_argument('--xls_file', type=str, default=r'report\2024-05-16_402-403.xls',
                         help="Measurement result report excel file path.")
+    parser.add_argument('--model_mode', type=str, choices=['day', 'night'], default='day',
+                        help="Choose measurement mode.")
     
     return parser

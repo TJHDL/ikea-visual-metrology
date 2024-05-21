@@ -35,6 +35,7 @@ def workflow_main():
     data_dst_dir = args.dst_dir
     use_protocol = args.use_protocol
     xls_file = args.xls_file
+    param.MODEL_MODE = args.model_mode
 
     if args.floor:
         param.FLOOR_NUM = args.floor
@@ -47,6 +48,7 @@ def workflow_main():
     print("[INPUT ARGUMENTS] camera_height: ", param.H_CAMERA)
     print("[INPUT ARGUMENTS] use_protocol: ", use_protocol)
     print("[INPUT ARGUMENTS] xls_file: ", xls_file)
+    print("[INPUT ARGUMENTS] model_mode: ", param.MODEL_MODE)
 
     print("[WORK FLOW] Clear previous result.")
     clear_folder(data_src_dir)
@@ -66,7 +68,7 @@ def marking_points_test_main():
 
 
 def LEDNet_test_main():
-    LEDNet_test(r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3', r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3_semantic')
+    LEDNet_test(r'C:\Users\95725\Desktop\rtsp_picture_1009_407_floor3', r'C:\Users\95725\Desktop\semantic')
 
 
 if __name__ == '__main__':

@@ -14,8 +14,9 @@ import time
 from PIL import Image
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import parameters as param
 
-LEDNet_detector_weights = r'D:\ProjectCodes\VisionMeasurement\GapHeightMeasurement\checkpoints\LEDNet_iter_170400_v100.pth'    #r'checkpoints\LEDNet_iter_170400_v100.pth'
+LEDNet_detector_weights = r'checkpoints\LEDNet_iter_013600_day.pth'    #r'checkpoints\LEDNet_iter_170400_v100.pth'
 
 image_dir = r'D:\ProjectCodes\VisionMeasurement\test'
 img_name = r'IMG_3543.jpg'
@@ -160,6 +161,7 @@ def get_device_and_LEDNet_model():
     device = torch.device('cuda:0' if cuda else 'cpu')
 
     model = LEDNet(3).to(device)  # param: num_class
+    print("[INFO] Loaded LEDNet_detector_weights: ", LEDNet_detector_weights)
     model.load_state_dict(torch.load(LEDNet_detector_weights, map_location=device))
     model.eval()
 
@@ -182,7 +184,9 @@ def get_transform_fn():
     LEDNet语义分割推理
 '''
 def LEDNet_inference(image):
-    global LEDNET_DEVICE, LEDNET_MODEL, TRANSFORM_FUNCTION
+    global LEDNET_DEVICE, LEDNET_MODEL, TRANSFORM_FUNCTION, LEDNet_detector_weights
+    LEDNet_detector_weights = param.SEMANTIC_CHECKPOINT_CHOICE[param.MODEL_MODE]
+
     # Load Model
     # device, model = get_device_and_LEDNet_model()
     if LEDNET_DEVICE is None or LEDNET_MODEL is None:

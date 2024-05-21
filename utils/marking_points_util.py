@@ -6,8 +6,9 @@ import config
 from model import DirectionalPointDetector
 from torchvision.transforms import ToTensor
 from data import get_predicted_points, calc_point_squre_dist
+import parameters as param
 
-BoxMPR_detector_weights = r'D:\ProjectCodes\VisionMeasurement\GapHeightMeasurement\checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
+BoxMPR_detector_weights = r'checkpoints\dp_detector_59_dark.pth'   #开灯:r'checkpoints\dp_detector_799_v100.pth' 关灯:r'checkpoints\dp_detector_59_dark.pth'
 
 BOXMPR_DEVICE = None
 BOXMPR_MODEL = None
@@ -63,6 +64,7 @@ def get_device_and_BoxMPR_model():
     torch.set_grad_enabled(False)
     dp_detector = DirectionalPointDetector(
         3, 32, config.NUM_FEATURE_MAP_CHANNEL).to(device)
+    print("[INFO] Loaded BoxMPR_detector_weights: ", BoxMPR_detector_weights)
     dp_detector.load_state_dict(torch.load(BoxMPR_detector_weights, map_location=device))
     dp_detector.eval()
 
@@ -73,7 +75,9 @@ def get_device_and_BoxMPR_model():
     神经网络模型推理货物上端两顶点坐标
 '''
 def BoxMPR_inference(image):
-    global BOXMPR_DEVICE, BOXMPR_MODEL
+    global BOXMPR_DEVICE, BOXMPR_MODEL, BoxMPR_detector_weights
+    BoxMPR_detector_weights = param.POINT_CHECKPOINT_CHOICE[param.MODEL_MODE]
+
     # device, dp_detector = get_device_and_BoxMPR_model()
     if BOXMPR_DEVICE is None or BOXMPR_MODEL is None:
         print("[INFO] 预加载BoxMPR模型")
