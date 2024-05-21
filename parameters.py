@@ -90,7 +90,7 @@ VERTICAL_SAFE_THRESHOLD = 5     #cm
 
 def get_parser_for_measurement():
     parser = argparse.ArgumentParser(description='Arguments for spliting kuwei and measurement')
-    parser.add_argument('--img_dir', type=str, default=r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor4',
+    parser.add_argument('--img_dir', type=str, default=r'C:\Users\95725\Desktop\2024-05-16--20-36-43',
                         help="Original rtsp video stream frames' directory.")
     parser.add_argument('--src_dir', type=str, default=r'C:\Users\95725\Desktop\src',
                         help="Splited kuweis storage directory.")
@@ -102,7 +102,7 @@ def get_parser_for_measurement():
                         help="Measured kuwei type.")
     parser.add_argument('--use_protocol', type=bool, default=False,
                         help="Whether use protocol to save images or not.")
-    parser.add_argument('--xls_file', type=str, default=r'report\407-03-00-60_20231129.xls',
+    parser.add_argument('--xls_file', type=str, default=r'report\2024-05-16_402-403.xls',
                         help="Measurement result report excel file path.")
     
     return parser

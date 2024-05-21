@@ -130,7 +130,7 @@ def points_filter(points, image):
                 continue
 
             # Step 7: bottom points filtration
-            if point_i[1] >= 550 or point_j[1] >= 550:
+            if point_i[1] >= 480 or point_j[1] >= 480:
                 continue
 
             point_pairs.append((i, j))

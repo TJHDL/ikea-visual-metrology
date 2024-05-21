@@ -194,8 +194,8 @@ def BoxMPR_LEDNet_main(image_dir, save_dir, image_name):
         print('P1 y position is invalid! P1 y position is set as half of height.')
         p1_y = height / 2
 
-    if abs(p0_y - p1_y) > 5:
-        p0_y, p1_y = max(p0_y, p1_y), max(p0_y, p1_y)
+    # if abs(p0_y - p1_y) > 5:
+    #     p0_y, p1_y = max(p0_y, p1_y), max(p0_y, p1_y)
 
     radius = 5
     cv2.circle(image, (p0_x, p0_y), radius, (255, 0, 0), 3)
@@ -219,8 +219,8 @@ def BoxMPR_LEDNet_main(image_dir, save_dir, image_name):
     if p3_y == 0:
         p3_y = p3_y_lednet if p3_y_lednet > 0 else p3_y_line
 
-    if abs(p2_y - p3_y) > 5:
-        p2_y, p3_y = min(p2_y, p3_y), min(p2_y, p3_y)
+    # if abs(p2_y - p3_y) > 5:
+    #     p2_y, p3_y = min(p2_y, p3_y), min(p2_y, p3_y)
 
     cv2.circle(image, (p2_x, p2_y), radius, (255, 255, 0), 3)
     cv2.circle(image, (p3_x, p3_y), radius, (0, 255, 255), 3)
