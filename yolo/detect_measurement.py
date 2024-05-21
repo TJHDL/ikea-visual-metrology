@@ -32,7 +32,9 @@ def receive_messages(client_socket):
                 print("Received: ", message)
                 logger.info(message)
                 infos = message.split('/')
-                protocol.HUOJIA, protocol.KUWEI, protocol.FLOOR, protocol.SPLIT = infos[0], infos[1], infos[2], infos[3]
+                protocol.HUOJIA, protocol.KUWEI, protocol.FLOOR = infos[0], infos[1], infos[2]
+                if infos[3] == 1:
+                    protocol.SPLIT = infos[3]
                 protocol.SPLIT = int(protocol.SPLIT)
         except Exception as e:
             print("Error receiving message:", str(e))

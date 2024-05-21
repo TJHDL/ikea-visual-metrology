@@ -306,6 +306,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
                         if not os.path.exists(save_path):
                             os.makedirs(save_path)
                             print("Start saving a new kuwei: ", folder_name)
+                        protocol.SPLIT = 0
 
                     if n % 4 == 0:  # read every 4th frame每四帧检测一次标签
                         success, im = cap.retrieve()
