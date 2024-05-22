@@ -7,6 +7,10 @@ from utils.report_util import measurement_kuwei_projection, get_xls_workbook_she
 from utils.marking_points_util import marking_points_test
 from utils.semantic_info_util import LEDNet_test
 
+
+'''
+    未按照协议采集图像时的测量主程序（视频流抽帧存储在一个文件夹下）
+'''
 def measurement_main(img_dir, data_src_dir, data_dst_dir):
     batch_kuwei_key_frame_filter(img_dir, data_src_dir)
     horizontal_main.batch_serial_measurement(data_src_dir, data_dst_dir)
@@ -14,6 +18,9 @@ def measurement_main(img_dir, data_src_dir, data_dst_dir):
     print("[END INFO] Measurement result in the directory: ", data_dst_dir)
 
 
+'''
+    按照协议采集图像时的测量主程序（视频流按库位抽帧存储在各个子文件夹下）
+'''
 def measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file):
     batch_kuwei_key_frame_filter_protocol(img_dir, data_src_dir)
     horizontal_main.batch_serial_measurement_protocol(data_src_dir, data_dst_dir)
@@ -25,6 +32,12 @@ def measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file):
     print("[END INFO] Measurement result report in the directory: ", xls_file)
 
 
+'''
+    工作流主程序，包含以下功能：
+    1. 执行参数解析
+    2. 清空测量工作空间的文件夹
+    3. 根据是否使用协议选择测量主程序
+'''
 def workflow_main():
     print("[START INFO] Start measurement work flow.")
     parser = param.get_parser_for_measurement()
@@ -63,10 +76,16 @@ def workflow_main():
         measurement_main_protocol(img_dir, data_src_dir, data_dst_dir, xls_file)
 
 
+'''
+    标记点回归效果测试，需要适当修改路径和保存识别结果的代码
+'''
 def marking_points_test_main():
     marking_points_test(r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3', r'C:\Users\95725\Desktop\rtsp_picture_20240322\floor3_points')
 
 
+'''
+    语义分割效果测试，需要适当修改路径和保存识别结果的代码
+'''
 def LEDNet_test_main():
     LEDNet_test(r'C:\Users\95725\Desktop\rtsp_picture_1009_407_floor3', r'C:\Users\95725\Desktop\semantic')
 

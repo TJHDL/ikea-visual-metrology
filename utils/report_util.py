@@ -203,6 +203,9 @@ def edit_report(xls_file, sheet, new_book, huojia, floor, kuwei, safe, valid_row
     new_book.save(xls_file)
 
 
+'''
+    将测量结果与库位信息关联到一起并生成测量报告
+'''
 def measurement_kuwei_projection(img_dir, data_dst_dir, xls_file):
     workbook, sheet, new_book = get_xls_workbook_sheet(xls_file)
     valid_rows, kuwei_infos = count_xls_valid_rows(sheet)
